@@ -81,11 +81,11 @@ class Cow:
             return False
 
 
-def simulate_one_cow():
+def simulate_one_cow(initial_conds: dict = {}):
     """Simulate one cow for 1000 steps.
     Make two plots: one of hidden state over time, one of observable state over time.
     """
-    cow = Cow()
+    cow = Cow(**initial_conds)
     steps = 15000
     hidden_states = np.zeros((steps, 2))
     obs_states = np.zeros(steps, dtype=int)
@@ -112,5 +112,19 @@ def simulate_one_cow():
     plt.tight_layout()  # Adjust layout to increase spacing between plots
     plt.show()
 
+
+def simulate_periodic_orbit_A():
+    """Simulate a periodic orbit by setting params to match eqn 12"""
+    alpha_1 = np.random.uniform(0, 0.1)
+    beta_1 = np.random.uniform(0, 0.1)
+    alpha_2 = np.random.uniform(0, 0.1)
+    beta_2 = alpha_1 * beta_1 / alpha_2
+    simulate_one_cow(
+        initial_conds={
+            "params": (alpha_1, alpha_2, beta_1, beta_2)
+        }
+    )
+
 if __name__ == "__main__":
-    simulate_one_cow()
+    # simulate_one_cow()
+    simulate_periodic_orbit_A()
