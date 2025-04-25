@@ -89,11 +89,14 @@ def simulate_one_cow():
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 8))  # Increase figure size for more vertical space
     ax1.plot(hidden_states[:, 0], hidden_states[:, 1])
+    ax1.scatter(hidden_states[0, 0], hidden_states[0, 1], color='red', label='Initial State')
     for idx in state_change_idxs:
-        ax1.annotate(f"{['E', 'R', 'S'][obs_states[idx]]}", (hidden_states[idx, 0], hidden_states[idx, 1]),
+        ax1.annotate(f"{['E', 'R', 'S'][obs_states[idx]]} (s={idx})", (hidden_states[idx, 0], hidden_states[idx, 1]),
                      textcoords="offset points", xytext=(5, 5), ha='center')
     ax1.set_title("Hidden state")
     ax2.plot(obs_states)
+    ax2.set_yticks([0, 1, 2])
+    ax2.set_yticklabels(["E", "R", "S"])
     ax2.set_title("Observable state")
     plt.tight_layout()  # Adjust layout to increase spacing between plots
     plt.show()
