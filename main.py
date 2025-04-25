@@ -14,7 +14,7 @@ class Cow:
             # self.x = np.random.uniform(0, 1)
             # self.y = np.random.uniform(0, 1)
             self.x = 1
-            self.y = np.random.uniform(self.delta, 1)
+            self.y = np.random.uniform(delta, 1)
         else:
             self.x, self.y = init_hiddenstate
 
