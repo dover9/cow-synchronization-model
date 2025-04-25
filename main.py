@@ -54,6 +54,10 @@ class Cow:
         dx, dy = self.hidden_state_derivs()
         self.x += stepsize * dx
         self.y += stepsize * dy
+        if self.x > 1:
+            self.x = 1
+        if self.y > 1:
+            self.y = 1
             
     def next_obs_state(self) -> bool:
         """Update observable state. Returns True if the state has changed."""
