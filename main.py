@@ -11,13 +11,16 @@ class Cow:
                  params: tuple[float, float, float, float] = None,
                  delta: float = 0.01):
         if init_hiddenstate is None:
-            self.x = np.random.uniform(0, 1)
-            self.y = np.random.uniform(0, 1)
+            # self.x = np.random.uniform(0, 1)
+            # self.y = np.random.uniform(0, 1)
+            self.x = 1
+            self.y = np.random.uniform(self.delta, 1)
         else:
             self.x, self.y = init_hiddenstate
 
         if init_obsstate is None:
-            self.obs_state = np.random.choice(["E", "R", "S"])
+            # self.obs_state = np.random.choice(["E", "R", "S"])
+            self.obs_state = "E"
         else:
             self.obs_state = init_obsstate
 
@@ -64,6 +67,10 @@ class Cow:
         elif (self.obs_state in ("E", "R") 
               and ((self.x < 1 and self.y <= self.delta) # the leq prevents oob
                    or (self.x <= self.delta and self.y < 1))):
+            self.obs_state = "S"
+            return True
+        elif (self.x > 1 and self.y > 1 and self.obs_state != "S"):
+            # tiebreaker. cf 3.0
             self.obs_state = "S"
             return True
         else:
