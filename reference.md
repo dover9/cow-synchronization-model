@@ -23,21 +23,21 @@ where:
 
 The internal state variables $(x, y)$ evolve differently depending on the cow’s observable behavior $\theta$.
 
-- **($\mathcal{E}$) Eating State:**
+**($\mathcal{E}$) Eating State:**
   $$
   \dot{x} = -\alpha_2 x,
   \quad
   \dot{y} = \beta_1 y
   $$
 
-- **($\mathcal{R}$) Resting (Ruminating) State:**
+**($\mathcal{R}$) Resting (Ruminating) State:**
   $$
   \dot{x} = \alpha_1 x,
   \quad
   \dot{y} = -\beta_2 y
   $$
 
-- **($\mathcal{S}$) Standing State:**
+**($\mathcal{S}$) Standing State:**
   $$
   \dot{x} = \alpha_1 x,
   \quad
@@ -56,17 +56,17 @@ The internal state variables $(x, y)$ evolve differently depending on the cow’
 
 The cow's observable behavior $\theta$ evolves according to the following rules based on the internal states $(x, y)$:
 
-- **Switch to Eating ($\mathcal{E}$)** if:
+**Switch to Eating ($\mathcal{E}$)** if:
   $$
   \theta \in \{ \mathcal{R}, \mathcal{S} \} \quad \text{and} \quad x = 1
   $$
 
-- **Switch to Ruminating ($\mathcal{R}$)** if:
+**Switch to Ruminating ($\mathcal{R}$)** if:
   $$
   \theta \in \{ \mathcal{E}, \mathcal{S} \} \quad \text{and} \quad x < 1, \quad y = 1
   $$
 
-- **Switch to Standing ($\mathcal{S}$)** if:
+**Switch to Standing ($\mathcal{S}$)** if:
   $$
   \theta \in \{ \mathcal{E}, \mathcal{R} \} \quad \text{and} \quad \left( y = \delta \, \text{and} \, x < 1 \quad \text{or} \quad x = \delta \, \text{and} \, y < 1 \right)
   $$
