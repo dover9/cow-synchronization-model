@@ -249,7 +249,7 @@ $$
 
 ---
 
-To model interactions, we define the **eating influence** $I^{(E)}_i$ and **ruminating influence** $I^{(R)}_i$ for each cow $i$:
+To model interactions, we define the **eating influence** $e_i$ and **ruminating influence** $r_i$ for each cow $i$:
 
 $$
 e_i = \frac{1}{k_i} \sum_{j=1}^n a_{ij} \chi_{\mathcal{E}}(\theta_j)
@@ -268,11 +268,11 @@ where:
 Now, the **coupled dynamics** for each cow are:
 
 $$
-\dot{x}_i = \left( \alpha^{(i)}(\theta_i) + \sigma_x I^{(E)}_i \right) x_i
+\dot{x}_i = \left( \alpha^{(i)}(\theta_i) + \sigma_x e_i \right) x_i
 $$
 
 $$
-\dot{y}_i = \left( \beta^{(i)}(\theta_i) + \sigma_y I^{(R)}_i \right) y_i
+\dot{y}_i = \left( \beta^{(i)}(\theta_i) + \sigma_y r_i \right) y_i
 $$
 
 where:
