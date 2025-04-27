@@ -267,9 +267,9 @@ $$
 \chi_{\mathcal{E}}(\theta_j)
 $$
 
-<!-- $$
-\dot{x}_i = \left( \alpha^{(i)}(\theta_i) + \frac{\sigma_x}{k_i} \sum\limits_{j=1}^{n} a_{ij} \chi_{\mathcal{E}}(\theta_j) \right) x_i
-$$ -->
+$$
+\dot{x}_i = \left( \alpha^{(i)}(\theta_i) \right) x_i + \left( \frac{\sigma_x}{k_i} \sum\limits_{j=1}^{n} a_{ij} \chi_{\mathcal{E}}(\theta_j) \right) x_i
+$$
 
 $$
 \dot{y}_i = \left( \beta^{(i)}(\theta_i) + \frac{\sigma_y}{k_i} \sum\limits_{j=1}^{n} a_{ij} \chi_{\mathcal{R}}(\theta_j) \right) y_i
