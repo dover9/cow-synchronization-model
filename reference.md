@@ -252,7 +252,7 @@ $$
 Now, for a herd of $n$ cows, indexed by $i$, the **coupled dynamics** are:
 
 $$
-\dot{x}_i = \left( \alpha^{(i)}(\theta_i) + \frac{\sigma_y}{k_i} \right) 
+\dot{x}_i = \left( \alpha^{(i)}(\theta_i) + \frac{\sigma_y}{k_i} \chi_{\mathcal{R}}(\theta_j)\right) 
 $$
 
 <!-- $$
