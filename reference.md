@@ -251,12 +251,12 @@ $$
 
 To model interactions, we define the **eating influence** $I^{(E)}_i$ and **ruminating influence** $I^{(R)}_i$ for each cow $i$:
 
-<!-- <!-- $$
-I^{(E)}_i = \frac{1}{k_i} \sum_{j=1}^n a_{ij} \chi_{\mathcal{E}}(\theta_j)
-$$ -->
-<!-- I^{(R)}_i = -->
 $$
-R'_i = \frac{1}{k_i} \sum_{j=1}^n a_{ij} \chi_{\mathcal{R}}(\theta_j)
+e_i = \frac{1}{k_i} \sum_{j=1}^n a_{ij} \chi_{\mathcal{E}}(\theta_j)
+$$
+
+$$
+r_i = \frac{1}{k_i} \sum_{j=1}^n a_{ij} \chi_{\mathcal{R}}(\theta_j)
 $$
 
 where:
