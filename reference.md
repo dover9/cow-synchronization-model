@@ -115,81 +115,89 @@ By focusing on transitions at $\Sigma'$, we simplify the analysis of synchroniza
 
 ## 5. Discrete Mapping Rules (Cases a–h)
 
-The discrete map $g$ determines how the cow's state $(x, y, \theta)$ evolves after hitting a boundary in $\Sigma'$.
+The discrete map $g$ determines how the cow's state $(x,y,\theta)$ evolves after hitting a boundary in $\Sigma'$.
 
 Each case corresponds to hitting a boundary (either $x=1$, $y=1$, $x=\delta$, or $y=\delta$) and switching behavior accordingly.
 
----
 
-**Case (a)**:  
-Starting from $\theta = \mathcal{E}$, hitting $x = 1$.
-- If $y \geq \dfrac{\beta_1}{\alpha_2}$:
-  $$
-  g(x=1, \delta \leq y \leq 1; \mathcal{E}) = \left( \dfrac{\alpha_2}{\beta_1} y, 1; \mathcal{R} \right)
-  $$
+**Case (a)**  
+Starting from $\theta = \mathcal{E}$, hitting $x=1$.
 
----
+If $y \geq \dfrac{\beta_1}{\alpha_2}$:
 
-**Case (b)**:  
-Starting from $\theta = \mathcal{E}$, hitting $x = 1$.
-- If $y < \dfrac{\beta_1}{\alpha_2}$:
-  $$
-  g(x=1, \delta \leq y \leq 1; \mathcal{E}) = \left( \delta, \delta^{-\frac{\beta_1}{\alpha_2}} y; \mathcal{S} \right)
-  $$
+$$
+g(x=1, \delta \leq y \leq 1; \mathcal{E}) = \left( \dfrac{\alpha_2}{\beta_1} y, \, 1; \, \mathcal{R} \right)
+$$
 
----
 
-**Case (c)**:  
-Starting from $\theta = \mathcal{R}$, hitting $y = 1$.
-- If $x \geq \dfrac{\alpha_1}{\beta_2}$:
-  $$
-  g(\delta \leq x < 1, y=1; \mathcal{R}) = \left( 1, \dfrac{\beta_2}{\alpha_1} x; \mathcal{E} \right)
-  $$
+**Case (b)**  
+Starting from $\theta = \mathcal{E}$, hitting $x=1$.
 
----
+If $y < \dfrac{\beta_1}{\alpha_2}$:
 
-**Case (d)**:  
-Starting from $\theta = \mathcal{R}$, hitting $y = 1$.
-- If $x < \dfrac{\alpha_1}{\beta_2}$:
-  $$
-  g(\delta \leq x < 1, y=1; \mathcal{R}) = \left( \delta^{-\frac{\alpha_1}{\beta_2}} x, \delta; \mathcal{S} \right)
-  $$
+$$
+g(x=1, \delta \leq y \leq 1; \mathcal{E}) = \left( \delta, \, \delta^{-\frac{\beta_1}{\alpha_2}} y; \, \mathcal{S} \right)
+$$
 
----
 
-**Case (e)**:  
-Starting from $\theta = \mathcal{S}$, hitting $x = \delta$.
-- If $y \leq \dfrac{\beta_1}{\alpha_1}$:
-  $$
-  g(x=\delta, \delta \leq y < 1; \mathcal{S}) = \left( 1, \delta^{-\frac{\beta_1}{\alpha_1}} y; \mathcal{E} \right)
-  $$
+**Case (c)**  
+Starting from $\theta = \mathcal{R}$, hitting $y=1$.
 
----
+If $x \geq \dfrac{\alpha_1}{\beta_2}$:
 
-**Case (f)**:  
-Starting from $\theta = \mathcal{S}$, hitting $x = \delta$.
-- If $y > \dfrac{\beta_1}{\alpha_1}$:
-  $$
-  g(x=\delta, \delta \leq y < 1; \mathcal{S}) = \left( \dfrac{\alpha_1}{\beta_1} y, 1; \mathcal{R} \right)
-  $$
+$$
+g(\delta \leq x < 1, y=1; \mathcal{R}) = \left( 1, \, \dfrac{\beta_2}{\alpha_1} x; \, \mathcal{E} \right)
+$$
 
----
 
-**Case (g)**:  
-Starting from $\theta = \mathcal{S}$, hitting $y = \delta$.
-- If $x \geq \dfrac{\alpha_1}{\beta_1}$:
-  $$
-  g(\delta < x < 1, y=\delta; \mathcal{S}) = \left( 1, \delta^{-\frac{\alpha_1}{\beta_1}} x; \mathcal{E} \right)
-  $$
+**Case (d)**  
+Starting from $\theta = \mathcal{R}$, hitting $y=1$.
 
----
+If $x < \dfrac{\alpha_1}{\beta_2}$:
 
-**Case (h)**:  
-Starting from $\theta = \mathcal{S}$, hitting $y = \delta$.
-- If $x < \dfrac{\alpha_1}{\beta_1}$:
-  $$
-  g(\delta < x < 1, y=\delta; \mathcal{S}) = \left( \delta^{-\frac{\alpha_1}{\beta_1}} x, 1; \mathcal{R} \right)
-  $$
+$$
+g(\delta \leq x < 1, y=1; \mathcal{R}) = \left( \delta^{-\frac{\alpha_1}{\beta_2}} x, \, \delta; \, \mathcal{S} \right)
+$$
+
+
+**Case (e)**  
+Starting from $\theta = \mathcal{S}$, hitting $x=\delta$.
+
+If $y \leq \dfrac{\beta_1}{\alpha_1}$:
+
+$$
+g(x=\delta, \delta \leq y < 1; \mathcal{S}) = \left( 1, \, \delta^{-\frac{\beta_1}{\alpha_1}} y; \, \mathcal{E} \right)
+$$
+
+
+**Case (f)**  
+Starting from $\theta = \mathcal{S}$, hitting $x=\delta$.
+
+If $y > \dfrac{\beta_1}{\alpha_1}$:
+
+$$
+g(x=\delta, \delta \leq y < 1; \mathcal{S}) = \left( \dfrac{\alpha_1}{\beta_1} y, \, 1; \, \mathcal{R} \right)
+$$
+
+
+**Case (g)**  
+Starting from $\theta = \mathcal{S}$, hitting $y=\delta$.
+
+If $x \geq \dfrac{\alpha_1}{\beta_1}$:
+
+$$
+g(\delta < x < 1, y=\delta; \mathcal{S}) = \left( 1, \, \delta^{-\frac{\alpha_1}{\beta_1}} x; \, \mathcal{E} \right)
+$$
+
+
+**Case (h)**  
+Starting from $\theta = \mathcal{S}$, hitting $y=\delta$.
+
+If $x < \dfrac{\alpha_1}{\beta_1}$:
+
+$$
+g(\delta < x < 1, y=\delta; \mathcal{S}) = \left( \delta^{-\frac{\alpha_1}{\beta_1}} x, \, 1; \, \mathcal{R} \right)
+$$
 
 ### Summary of Discrete Mapping Rules (Cases a–h)
 
@@ -243,13 +251,16 @@ $$
 
 Now, for a herd of $n$ cows, indexed by $i$, the **coupled dynamics** are:
 
+
 $$
 \dot{x}_i = \left[ \alpha^{(i)}(\theta_i) + \frac{\sigma_x}{k_i} \sum_{j=1}^{n} a_{ij} \chi_{\mathcal{E}}(\theta_j) \right] x_i,
 $$
 
+
 $$
 \dot{y}_i = \left[ \beta^{(i)}(\theta_i) + \frac{\sigma_y}{k_i} \sum_{j=1}^{n} a_{ij} \chi_{\mathcal{R}}(\theta_j) \right] y_i,
 $$
+
 
 where:
 - $a_{ij}(t) = 1$ if cow $i$ perceives cow $j$ at time $t$, and $0$ otherwise,
