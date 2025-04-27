@@ -59,7 +59,7 @@ The cow's observable behavior $\theta$ evolves according to the following rules 
 **Switch to Eating ($\mathcal{E}$)** if:
 
 $$
-\theta \in \{ \mathcal{R}, \mathcal{S} \} \quad \text{and} \quad x = 1
+\theta \in {\mathcal{R}, \mathcal{S}} \quad \text{and} \quad x = 1
 $$
 
 **Switch to Ruminating ($\mathcal{R}$)** if:
