@@ -259,11 +259,11 @@ $$
 I^{(R)}_i = \frac{1}{k_i} \sum_{j=1}^n a_{ij} \chi_{\mathcal{R}}(\theta_j)
 $$ -->
 $$
-I^{(E)}_i = \sum_{j=1}^n a_{ij} \chi_{\mathcal{E}}(\theta_j)
+\sum_{j=1}^n a_{ij} \chi_{\mathcal{E}}(\theta_j)
 $$
 
 $$
-I^{(R)}_i = \sum_{j=1}^n a_{ij} \chi_{\mathcal{R}}(\theta_j)
+\sum_{j=1}^n a_{ij} \chi_{\mathcal{R}}(\theta_j)
 $$
 where:
 - $a_{ij}(t) = 1$ if cow $i$ perceives cow $j$ at time $t$, and $0$ otherwise,
