@@ -251,20 +251,14 @@ $$
 
 To model interactions, we define the **eating influence** $I^{(E)}_i$ and **ruminating influence** $I^{(R)}_i$ for each cow $i$:
 
-<!-- $$
+<!-- <!-- $$
 I^{(E)}_i = \frac{1}{k_i} \sum_{j=1}^n a_{ij} \chi_{\mathcal{E}}(\theta_j)
-$$
+$$ -->
 
 $$
 I^{(R)}_i = \frac{1}{k_i} \sum_{j=1}^n a_{ij} \chi_{\mathcal{R}}(\theta_j)
 $$ -->
-$$
-\sum_{j=1}^n a_{ij} \chi_{\mathcal{E}}(\theta_j)
-$$
 
-$$
-\sum_{j=1}^n a_{ij} \chi_{\mathcal{R}}(\theta_j)
-$$
 where:
 - $a_{ij}(t) = 1$ if cow $i$ perceives cow $j$ at time $t$, and $0$ otherwise,
 - $k_i = \sum_{j=1}^n a_{ij}$ is the number of cows visible to cow $i$.
