@@ -251,12 +251,12 @@ $$
 
 Now, for a herd of $n$ cows, indexed by $i$, the **coupled dynamics** are:
 
-$$
+\[
 \begin{aligned}
 \dot{x}_i &= \left( \alpha^{(i)}(\theta_i) + \frac{\sigma_x}{k_i} \sum_{j=1}^{n} a_{ij} \chi_{\mathcal{E}}(\theta_j) \right) x_i \\
 \dot{y}_i &= \left( \beta^{(i)}(\theta_i) + \frac{\sigma_y}{k_i} \sum_{j=1}^{n} a_{ij} \chi_{\mathcal{R}}(\theta_j) \right) y_i
 \end{aligned}
-$$
+\]
 
 where:
 - $a_{ij}(t) = 1$ if cow $i$ perceives cow $j$ at time $t$, and $0$ otherwise,
