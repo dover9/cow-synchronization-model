@@ -24,27 +24,25 @@ where:
 The internal state variables $(x, y)$ evolve differently depending on the cow’s observable behavior $\theta$.
 
 **($\mathcal{E}$) Eating State:**
-  $$
-  \dot{x} = -\alpha_2 x,
-  \quad
-  \dot{y} = \beta_1 y
-  $$
+
+$$
+\dot{x} = -\alpha_2 x, \quad \dot{y} = \beta_1 y
+$$
 
 **($\mathcal{R}$) Resting (Ruminating) State:**
-  $$
-  \dot{x} = \alpha_1 x,
-  \quad
-  \dot{y} = -\beta_2 y
-  $$
+
+$$
+\dot{x} = \alpha_1 x, \quad \dot{y} = -\beta_2 y
+$$
 
 **($\mathcal{S}$) Standing State:**
-  $$
-  \dot{x} = \alpha_1 x,
-  \quad
-  \dot{y} = \beta_1 y
-  $$
+
+$$
+\dot{x} = \alpha_1 x, \quad \dot{y} = \beta_1 y
+$$
 
 ### Description
+
 > The dynamics of the cow’s hidden hunger ($x$) and lying desire ($y$) depend on its current observable behavior ($\theta$).  
 > Parameters $\alpha_1, \alpha_2, \beta_1, \beta_2$ are all positive real numbers and represent biological rates:
 > - $\alpha_1$: rate of increase of hunger,
@@ -52,29 +50,35 @@ The internal state variables $(x, y)$ evolve differently depending on the cow’
 > - $\beta_1$: rate of increase of desire to lie down,
 > - $\beta_2$: decay rate of desire to lie down.
 
+---
+
 ## 3. Observable Behavior Switching Rules
 
 The cow's observable behavior $\theta$ evolves according to the following rules based on the internal states $(x, y)$:
 
 **Switch to Eating ($\mathcal{E}$)** if:
-  $$
-  \theta \in \{ \mathcal{R}, \mathcal{S} \} \quad \text{and} \quad x = 1
-  $$
+
+$$
+\theta \in \{ \mathcal{R}, \mathcal{S} \} \quad \text{and} \quad x = 1
+$$
 
 **Switch to Ruminating ($\mathcal{R}$)** if:
-  $$
-  \theta \in \{ \mathcal{E}, \mathcal{S} \} \quad \text{and} \quad x < 1, \quad y = 1
-  $$
+
+$$
+\theta \in \{ \mathcal{E}, \mathcal{S} \} \quad \text{and} \quad x < 1, \quad y = 1
+$$
 
 **Switch to Standing ($\mathcal{S}$)** if:
-  $$
-  \theta \in \{ \mathcal{E}, \mathcal{R} \} \quad \text{and} \quad \left( y = \delta \, \text{and} \, x < 1 \quad \text{or} \quad x = \delta \, \text{and} \, y < 1 \right)
-  $$
+
+$$
+\theta \in \{ \mathcal{E}, \mathcal{R} \} \quad \text{and} \quad \left( y = \delta \, \text{and} \, x < 1 \quad \text{or} \quad x = \delta \, \text{and} \, y < 1 \right)
+$$
 
 where:
 - $\delta$ is a small positive threshold (e.g., $\delta = 0.01$) used to prevent the cow from becoming stuck at the $(x, y) = (0, 0)$ point.
 
 ### Description
+
 > Cows switch behaviors based on their internal hunger ($x$) and lying desire ($y$) levels.  
 > - When hunger reaches its maximum, cows switch to eating.  
 > - When lying desire reaches its maximum (and hunger is under control), cows switch to ruminating.  
