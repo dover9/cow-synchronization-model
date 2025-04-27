@@ -237,7 +237,7 @@ $$
 \dot{x} = \alpha(\theta) x, \quad \dot{y} = \beta(\theta) y,
 $$
 
-where:
+where
 
 $$
 \alpha(\theta) = -\alpha_2 \chi_{\mathcal{E}}(\theta) + \alpha_1 \chi_{\mathcal{R}}(\theta) + \alpha_1 \chi_{\mathcal{S}}(\theta),
@@ -249,45 +249,50 @@ $$
 
 ---
 
-<!-- Now, for a herd of $n$ cows, indexed by $i$, the **coupled dynamics** are:
+To model interactions, we define the **eating influence** $I^{(E)}_i$ and **ruminating influence** $I^{(R)}_i$ for each cow $i$:
 
 $$
-\dot{x}_i = \left( \alpha^{(i)}(\theta_i) + \frac{\sigma_y}{k_i} \right)
-$$
-
-$$
-\sum\limits_{j=1}^{n} a_{ij} \chi_{\mathcal{E}}(\theta_j)
+I^{(E)}_i = \frac{1}{k_i} \sum_{j=1}^n a_{ij} \chi_{\mathcal{E}}(\theta_j)
 $$
 
 $$
-\sum\limits_{j=1}^{n} a_{ij}
+I^{(R)}_i = \frac{1}{k_i} \sum_{j=1}^n a_{ij} \chi_{\mathcal{R}}(\theta_j)
+$$
+
+where:
+- $a_{ij}(t) = 1$ if cow $i$ perceives cow $j$ at time $t$, and $0$ otherwise,
+- $k_i = \sum_{j=1}^n a_{ij}$ is the number of cows visible to cow $i$.
+
+---
+
+Now, the **coupled dynamics** for each cow are:
+
+$$
+\dot{x}_i = \left( \alpha^{(i)}(\theta_i) + \sigma_x I^{(E)}_i \right) x_i
 $$
 
 $$
-\chi_{\mathcal{E}}(\theta_j)
-$$
-
-$$
-\dot{x}_i = \left( \alpha^{(i)}(\theta_i) \right) x_i + \left( \frac{\sigma_x}{k_i} \sum\limits_{j=1}^{n} a_{ij} \chi_{\mathcal{E}}(\theta_j) \right) x_i
-$$
-
-$$
-\dot{y}_i = \left( \beta^{(i)}(\theta_i) + \frac{\sigma_y}{k_i} \sum\limits_{j=1}^{n} a_{ij} \chi_{\mathcal{R}}(\theta_j) \right) y_i
-$$ -->
-Now, for a herd of $n$ cows, indexed by $i$, the **coupled dynamics** are:
-
-$$
-\dot{x}_i = \alpha^{(i)}(\theta_i) x_i + \frac{\sigma_x}{k_i} \left( \sum_{j=1}^n a_{ij} \chi_{\mathcal{E}}(\theta_j) \right) x_i
-$$
-
-$$
-\dot{y}_i = \beta^{(i)}(\theta_i) y_i + \frac{\sigma_y}{k_i} \left( \sum_{j=1}^n a_{ij} \chi_{\mathcal{R}}(\theta_j) \right) y_i
+\dot{y}_i = \left( \beta^{(i)}(\theta_i) + \sigma_y I^{(R)}_i \right) y_i
 $$
 
 where:
 - $a_{ij}(t) = 1$ if cow $i$ perceives cow $j$ at time $t$, and $0$ otherwise,
 - $k_i = \sum\limits_{j=1}^{n} a_{ij}$ is the number of cows visible to cow $i$,
 - $\sigma_x$ and $\sigma_y$ are non-negative coupling strengths.
+
+<!-- 
+Full LaTeX version for Overleaf (does not render on GitHub):
+
+Now, for a herd of $n$ cows, indexed by $i$, the coupled dynamics are:
+
+$$
+\dot{x}_i = \left( \alpha^{(i)}(\theta_i) + \frac{\sigma_x}{k_i} \sum_{j=1}^{n} a_{ij} \chi_{\mathcal{E}}(\theta_j) \right) x_i
+$$
+
+$$
+\dot{y}_i = \left( \beta^{(i)}(\theta_i) + \frac{\sigma_y}{k_i} \sum_{j=1}^{n} a_{ij} \chi_{\mathcal{R}}(\theta_j) \right) y_i
+$$
+-->
 
 ---
 
