@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 class Cow:
     """One cow. At this point covers paper up to but not including 2.3"""
 
