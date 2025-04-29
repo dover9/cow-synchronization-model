@@ -1,84 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
-class Cow:
-    """One cow. At this point covers paper up to but not including 2.3"""
-
-    def __init__(self,
-                 init_hiddenstate: tuple[float, float] = None,
-                 init_obsstate: str = None,
-                 params: tuple[float, float, float, float] = None,
-                 delta: float = 0.01):
-        if init_hiddenstate is None:
-            # self.x = np.random.uniform(0, 1)
-            # self.y = np.random.uniform(0, 1)
-            self.x = 1
-            self.y = np.random.uniform(delta, 1)
-        else:
-            self.x, self.y = init_hiddenstate
-
-        if init_obsstate is None:
-            # self.obs_state = np.random.choice(["E", "R", "S"])
-            self.obs_state = "E"
-        else:
-            self.obs_state = init_obsstate
-
-        if params is None:
-            self.alpha_1 = np.random.uniform(0, 0.1)
-            self.alpha_2 = np.random.uniform(0, 0.1)
-            self.beta_1 = np.random.uniform(0, 0.1)
-            self.beta_2 = np.random.uniform(0, 0.1)
-        else:
-            self.alpha_1, self.alpha_2, self.beta_1, self.beta_2 = params
-
-        self.delta = delta  # minimum hiddenstate values before switching
-
-    def hidden_state_derivs(self) -> tuple[float, float]:
-        """Return the derivatives of the hidden state."""
-        # eqns 3-5
-        if self.obs_state == "E":
-            dx = -self.alpha_2 * self.x
-            dy = self.beta_1 * self.y
-        elif self.obs_state == "R":
-            dx = self.alpha_1 * self.x
-            dy = -self.beta_2 * self.y
-        elif self.obs_state == "S":
-            dx = self.alpha_1 * self.x
-            dy = self.beta_1 * self.y
-        return dx, dy
-    
-    def update_hidden_state(self, stepsize: float = 0.01) -> None:
-        """Update hidden state by taking an Euler step."""
-        # assert stepsize < self.delta  # ensure we don't take too big a step
-        dx, dy = self.hidden_state_derivs()
-        self.x += stepsize * dx
-        self.y += stepsize * dy
-        if self.x > 1:
-            self.x = 1
-        if self.y > 1:
-            self.y = 1
-            
-    def next_obs_state(self) -> bool:
-        """Update observable state. Returns True if the state has changed."""
-        # eqn 6
-        if self.obs_state in ("R", "S") and self.x >= 1:
-            self.obs_state = "E"
-            return True
-        elif self.obs_state in ("E", "S") and self.x < 1 and self.y >= 1:
-            self.obs_state = "R"
-            return True
-        elif (self.obs_state in ("E", "R") 
-              and ((self.x < 1 and self.y <= self.delta) # the leq prevents oob
-                   or (self.x <= self.delta and self.y < 1))):
-            self.obs_state = "S"
-            return True
-        elif (self.x > 1 and self.y > 1 and self.obs_state != "S"):
-            # tiebreaker. cf 3.0
-            self.obs_state = "S"
-            return True
-        else:
-            return False
-
+from cow import Cow
+from cowherd import CowHerd
 
 def simulate_one_cow(initial_conds: dict = {}, case_label: str = "generic"):
     """Simulate one cow for 1000 steps.
@@ -279,9 +202,51 @@ def simulate_periodic_orbit_D():
         case_label="D"
     )
 
+def simulate_two_cows(timesteps=10000, stepsize=0.01, sigma_x=0.05, sigma_y=0.05):
+    # Create two cows with nearly identical parameters
+    epsilon = 0.002
+    cow1 = Cow(params=(0.04 + epsilon, 0.07 + epsilon, 0.03 + epsilon, 0.08 + epsilon), init_obsstate="E")
+    cow2 = Cow(params=(0.04 - epsilon, 0.07 - epsilon, 0.03 - epsilon, 0.08 - epsilon), init_obsstate="E")
+
+    # Fully connected adjacency matrix
+    adjacency = np.array([
+        [0, 1],
+        [1, 0]
+    ])
+
+    herd = CowHerd([cow1, cow2], adjacency, sigma_x=sigma_x, sigma_y=sigma_y)
+
+    # Track observable states over time
+    states_1 = []
+    states_2 = []
+
+    for _ in range(timesteps):
+        states_1.append(["E", "R", "S"].index(cow1.obs_state))
+        states_2.append(["E", "R", "S"].index(cow2.obs_state))
+        herd.step(stepsize)
+
+    return np.array(states_1), np.array(states_2)
+
+def plot_observable_states(states_1, states_2):
+    timesteps = len(states_1)
+    plt.figure(figsize=(10, 4))
+    plt.plot(states_1, label="Cow 1", alpha=0.8)
+    plt.plot(states_2, label="Cow 2", alpha=0.8)
+    plt.yticks([0, 1, 2], ["E", "R", "S"])
+    plt.xlabel("Time step")
+    plt.ylabel("Observable state")
+    plt.title("Observable States Over Time for Two Coupled Cows")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+    
+
 if __name__ == "__main__":
     # simulate_one_cow()
     simulate_periodic_orbit_A()
     simulate_periodic_orbit_B()
     simulate_periodic_orbit_C()
     simulate_periodic_orbit_D()
+    states_1, states_2 = simulate_two_cows()
+    plot_observable_states(states_1, states_2)
