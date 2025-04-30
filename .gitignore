@@ -1,3 +1,4 @@
 env/*
 foo*
 __pycache__*
+*.DS_Store
