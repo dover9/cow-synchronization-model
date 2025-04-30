@@ -204,9 +204,9 @@ def simulate_periodic_orbit_D():
 
 def simulate_two_cows(timesteps=10000, stepsize=0.01, sigma_x=0.05, sigma_y=0.05):
     # Create two cows with nearly identical parameters
-    epsilon = 0.002
-    cow1 = Cow(params=(0.04 + epsilon, 0.07 + epsilon, 0.03 + epsilon, 0.08 + epsilon), init_obsstate="E")
-    cow2 = Cow(params=(0.04 - epsilon, 0.07 - epsilon, 0.03 - epsilon, 0.08 - epsilon), init_obsstate="E")
+    epsilon = 0.001
+    cow1 = Cow(params=(0.05 + epsilon, 0.1 + epsilon, 0.05 + epsilon, 0.125 + epsilon), init_obsstate="E", delta=0.25)
+    cow2 = Cow(params=(0.05 - epsilon, 0.1 - epsilon, 0.05 - epsilon, 0.125 - epsilon), init_obsstate="E", delta=0.25)
 
     # Fully connected adjacency matrix
     adjacency = np.array([
@@ -244,9 +244,9 @@ def plot_observable_states(states_1, states_2):
 
 if __name__ == "__main__":
     # simulate_one_cow()
-    simulate_periodic_orbit_A()
-    simulate_periodic_orbit_B()
-    simulate_periodic_orbit_C()
-    simulate_periodic_orbit_D()
+    # simulate_periodic_orbit_A()
+    # simulate_periodic_orbit_B()
+    # simulate_periodic_orbit_C()
+    # simulate_periodic_orbit_D()
     states_1, states_2 = simulate_two_cows()
     plot_observable_states(states_1, states_2)
