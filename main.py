@@ -202,11 +202,44 @@ def simulate_periodic_orbit_D():
         case_label="D"
     )
 
-def simulate_two_cows(timesteps=10000, stepsize=0.01, sigma_x=0.05, sigma_y=0.05):
+# def simulate_two_cows(timesteps=10000, stepsize=0.01, sigma_x=0.05, sigma_y=0.05):
+#     # Create two cows with nearly identical parameters
+#     epsilon = 0.001
+#     params1 = (0.05 + epsilon, 0.1 + epsilon, 0.05 + epsilon, 0.125 + epsilon)
+#     params2 = (0.05 - epsilon, 0.1 - epsilon, 0.05 - epsilon, 0.125 - epsilon)
+#     initial_hiddenstate1 = (1.0, 0.25)  # fixed x and y
+#     initial_hiddenstate2 = (1.0, 0.25)  # fixed x and y
+
+#     cow1 = Cow(params=params1, init_hiddenstate=initial_hiddenstate1, init_obsstate="E", delta=0.25)
+#     cow2 = Cow(params=params2, init_hiddenstate=initial_hiddenstate2, init_obsstate="E", delta=0.25)
+
+#     # Fully connected adjacency matrix
+#     adjacency = np.array([
+#         [0, 1],
+#         [1, 0]
+#     ])
+
+#     herd = CowHerd([cow1, cow2], adjacency, sigma_x=sigma_x, sigma_y=sigma_y)
+
+#     # Track observable states over time
+#     states_1 = []
+#     states_2 = []
+
+#     for _ in range(timesteps):
+#         states_1.append(["E", "R", "S"].index(cow1.obs_state))
+#         states_2.append(["E", "R", "S"].index(cow2.obs_state))
+#         herd.step(stepsize)
+
+#     return np.array(states_1), np.array(states_2)
+
+def simulate_two_cows(timesteps=10000, stepsize=.5, sigma_x=0.045, sigma_y=0.045):
     # Create two cows with nearly identical parameters
     epsilon = 0.001
-    cow1 = Cow(params=(0.05 + epsilon, 0.1 + epsilon, 0.05 + epsilon, 0.125 + epsilon), init_obsstate="E", delta=0.25)
-    cow2 = Cow(params=(0.05 - epsilon, 0.1 - epsilon, 0.05 - epsilon, 0.125 - epsilon), init_obsstate="E", delta=0.25)
+    params1 = (0.05 + epsilon, 0.1 + epsilon, 0.05 + epsilon, 0.125 + epsilon)
+    params2 = (0.05 - epsilon, 0.1 - epsilon, 0.05 - epsilon, 0.125 - epsilon)
+
+    cow1 = Cow(params=params1, init_obsstate="E", delta=0.25)
+    cow2 = Cow(params=params2, init_obsstate="E", delta=0.25)
 
     # Fully connected adjacency matrix
     adjacency = np.array([
@@ -227,20 +260,51 @@ def simulate_two_cows(timesteps=10000, stepsize=0.01, sigma_x=0.05, sigma_y=0.05
 
     return np.array(states_1), np.array(states_2)
 
-def plot_observable_states(states_1, states_2):
-    timesteps = len(states_1)
+def plot_observable_states(states_1, states_2, start=0, end=None):
+    if end is None:
+        end = len(states_1)
+
+    time = range(start, end)
     plt.figure(figsize=(10, 4))
-    plt.plot(states_1, label="Cow 1", alpha=0.8)
-    plt.plot(states_2, label="Cow 2", alpha=0.8)
+    plt.plot(time, states_1[start:end], label="Cow 1", alpha=0.8)
+    plt.plot(time, states_2[start:end], label="Cow 2", alpha=0.8)
     plt.yticks([0, 1, 2], ["E", "R", "S"])
     plt.xlabel("Time step")
     plt.ylabel("Observable state")
-    plt.title("Observable States Over Time for Two Coupled Cows")
+    plt.title("Observable States Over Time for Two Uncoupled Cows")
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
     plt.show()
-    
+
+
+def plot_observable_states_stylized(states_1, states_2, start=3000, title="Observable States Over Time"):
+    timesteps = np.arange(start, start + len(states_1))
+
+    def get_state_change_points(states):
+        return [0] + [i for i in range(1, len(states)) if states[i] != states[i - 1]]
+
+    change_points_1 = get_state_change_points(states_1)
+    change_points_2 = get_state_change_points(states_2)
+
+    plt.figure(figsize=(10, 4))
+
+    # Plot full lines
+    plt.plot(timesteps, states_1, linestyle='-', color='red', linewidth=1, label='Cow 1')
+    plt.plot(timesteps, states_2, linestyle='--', color='black', linewidth=1, label='Cow 2')
+
+    # Plot markers only at state changes
+    plt.plot(timesteps[change_points_1], np.array(states_1)[change_points_1], 'ro', markersize=6)
+    plt.plot(timesteps[change_points_2], np.array(states_2)[change_points_2], 'kx', markersize=6)
+
+    plt.yticks([0, 1, 2], ["E", "R", "S"])
+    plt.xlabel("Time")
+    plt.ylabel("Observable state")
+    plt.title(title)
+    plt.grid(True, linestyle=':', alpha=0.4)
+    plt.tight_layout()
+    plt.legend()
+    plt.show()
 
 if __name__ == "__main__":
     # simulate_one_cow()
@@ -248,5 +312,13 @@ if __name__ == "__main__":
     # simulate_periodic_orbit_B()
     # simulate_periodic_orbit_C()
     # simulate_periodic_orbit_D()
-    states_1, states_2 = simulate_two_cows()
-    plot_observable_states(states_1, states_2)
+    full_states_1, full_states_2 = simulate_two_cows()
+
+    # Select time slice
+    start = 3000
+    end = 3200
+    states_1 = full_states_1[start:end]
+    states_2 = full_states_2[start:end]
+
+    # Plot using the stylized function
+    plot_observable_states_stylized(states_1, states_2, start=start, title="Observable States")
