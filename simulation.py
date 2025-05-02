@@ -149,9 +149,15 @@ def simulate_two_cows(timesteps=10000, stepsize=.5, sigma_x=0.045, sigma_y=0.045
     epsilon = 0.001
     params1 = (0.05 + epsilon, 0.1 + epsilon, 0.05 + epsilon, 0.125 + epsilon)
     params2 = (0.05 - epsilon, 0.1 - epsilon, 0.05 - epsilon, 0.125 - epsilon)
-
+    
     cow1 = Cow(params=params1, init_obsstate="E", delta=0.25)
     cow2 = Cow(params=params2, init_obsstate="E", delta=0.25)
+    
+    # # Fixed initial internal state: x = 1, y = 0.1
+    # init_state = (1.0, 0.1)
+    # params1 = params2 = (0.05, 0.1, 0.05, 0.125)
+    # cow1 = Cow(params=params1, init_obsstate="E", init_hiddenstate=init_state, delta=0.25)
+    # cow2 = Cow(params=params2, init_obsstate="E", init_hiddenstate=init_state, delta=0.25)
 
     # Fully connected adjacency matrix
     adjacency = np.array([
@@ -171,3 +177,41 @@ def simulate_two_cows(timesteps=10000, stepsize=.5, sigma_x=0.045, sigma_y=0.045
         herd.step(stepsize)
 
     return np.array(states_1), np.array(states_2)
+
+
+def simulate_herd(n_cows=10, timesteps=10000, stepsize=0.5,
+                  sigma_x=0.05, sigma_y=0.05,
+                  param_base=(0.05, 0.1, 0.05, 0.125),
+                  param_noise=0.001,
+                  init_state=(1.0, 0.1),
+                  delta=0.25):
+    """
+    Simulates a herd of n cows with slight parameter variation and coupling.
+
+    Returns:
+        List of observable state sequences, one per cow
+    """
+    base = np.array(param_base)
+
+    cows = []
+    for _ in range(n_cows):
+        # Add slight noise to parameters
+        noise = np.random.uniform(-param_noise, param_noise, size=4)
+        params = tuple(base + noise)
+        cow = Cow(params=params, init_obsstate="E", init_hiddenstate=init_state, delta=delta)
+        cows.append(cow)
+
+    # Fully connected adjacency matrix (no self-links)
+    A = np.ones((n_cows, n_cows)) - np.eye(n_cows)
+
+    herd = CowHerd(cows, A, sigma_x=sigma_x, sigma_y=sigma_y)
+
+    # Track observable states
+    state_history = [[] for _ in range(n_cows)]
+
+    for _ in range(timesteps):
+        for i, cow in enumerate(cows):
+            state_history[i].append(["E", "R", "S"].index(cow.obs_state))
+        herd.step(stepsize)
+
+    return state_history

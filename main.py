@@ -5,7 +5,8 @@ from simulation import (
     simulate_periodic_orbit_B,
     simulate_periodic_orbit_C,
     simulate_periodic_orbit_D,
-    simulate_two_cows
+    simulate_two_cows,
+    simulate_herd
 )
 from utils import plot_single_cow, plot_observable_states
 
@@ -59,6 +60,42 @@ def compute_pairwise_synchrony(times_i, times_j, max_shift=10):
 
     return best_delta
 
+def compute_herd_synchrony(state_sequences, max_shift=10):
+    """
+    Computes average herd synchrony over all unordered cow pairs (i, j), i < j.
+
+    Parameters:
+        state_sequences: list of observable state arrays (1 per cow)
+        max_shift: maximum time shift allowed when aligning transitions
+
+    Returns:
+        (avg_delta_E, avg_delta_R, total_delta)
+    """
+    n = len(state_sequences)
+    tau_list = [get_transition_times(states, 0) for states in state_sequences]
+    kappa_list = [get_transition_times(states, 1) for states in state_sequences]
+
+    total_delta_E = 0
+    total_delta_R = 0
+    count = 0
+
+    for i in range(n):
+        for j in range(i + 1, n):  # only unordered pairs (i < j)
+            delta_E = compute_pairwise_synchrony(tau_list[i], tau_list[j], max_shift)
+            delta_R = compute_pairwise_synchrony(kappa_list[i], kappa_list[j], max_shift)
+            total_delta_E += delta_E
+            total_delta_R += delta_R
+            count += 1
+
+    if count == 0:
+        return float("inf"), float("inf"), float("inf")
+
+    avg_delta_E = total_delta_E / count
+    avg_delta_R = total_delta_R / count
+    total = avg_delta_E + avg_delta_R
+
+    return avg_delta_E, avg_delta_R, total
+
 if __name__ == "__main__":
     # # Plot periodic orbit for case A
     # hidden, obs, switches = simulate_periodic_orbit_A()
@@ -99,6 +136,7 @@ if __name__ == "__main__":
 
     # 2-cow simulation
     states_1, states_2 = simulate_two_cows()
+    herd_states = [states_1, states_2]
 
     # Cow 1
     tau_1 = get_transition_times(states_1, target_state=0)  # Into Eating
@@ -112,7 +150,17 @@ if __name__ == "__main__":
     delta_R = compute_pairwise_synchrony(kappa_1, kappa_2)
     delta = delta_E + delta_R
 
-    print(f"Δ^E = {delta_E:.2f}, Δ^R = {delta_R:.2f}, Total Δ = {delta:.2f}")   
+    print(f"Δ^E = {delta_E:.2f}, Δ^R = {delta_R:.2f}, Total Δ = {delta:.2f}")
+
+    # states_1, states_2 = simulate_two_cows()
+    # herd_states = [states_1, states_2]
+
+    delta_E, delta_R, total = compute_herd_synchrony(herd_states)
+    print(f"Herd Synchrony, Δ^E = {delta_E:.2f}, Δ^R = {delta_R:.2f}, Δ = {total:.2f}")
+
+    herd_states = simulate_herd(n_cows=10)
+    delta_E, delta_R, total = compute_herd_synchrony(herd_states)
+    print(f"10-Cow Herd, Δ^E = {delta_E:.2f}, Δ^R = {delta_R:.2f}, Δ = {total:.2f}")
 
     # Select time slice
     start = 3000
