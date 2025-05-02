@@ -8,7 +8,7 @@ def simulate_one_cow(initial_conds: dict = {}, case_label: str = "generic"):
     Make two plots: one of hidden state over time, one of observable state over time.
     """
     cow = Cow(**initial_conds)
-    steps = 5000 #15000
+    steps = 15000 
     hidden_states = np.zeros((steps, 2))
     obs_states = np.zeros(steps, dtype=int)
     state_change_idxs = [0]
@@ -28,16 +28,16 @@ def simulate_one_cow(initial_conds: dict = {}, case_label: str = "generic"):
     # Hidden state trajectory
     ax1.plot(hidden_states[:, 0], hidden_states[:, 1], linewidth=2)
     ax1.scatter(hidden_states[0, 0], hidden_states[0, 1], color='red', label='Initial State', s=50)
-    for idx in state_change_idxs:
-        ax1.annotate(
-            f"{['E', 'R', 'S'][obs_states[idx]]} (s={idx})",
-            (hidden_states[idx, 0], hidden_states[idx, 1]),
-            textcoords="offset points",
-            xytext=(5, 5),
-            ha='center',
-            fontsize=8,      # smaller font
-            alpha=0.7)        # slightly transparent
-
+    # for idx in state_change_idxs:
+    #     ax1.annotate(
+    #         f"{['E', 'R', 'S'][obs_states[idx]]} (s={idx})",
+    #         (hidden_states[idx, 0], hidden_states[idx, 1]),
+    #         textcoords="offset points",
+    #         xytext=(5, 5),
+    #         ha='center',
+    #         fontsize=8,      # smaller font
+    #         alpha=0.7)        # slightly transparent
+    
     ax1.set_title("Hidden State Trajectory", fontsize=16)
     ax1.set_xlabel("x", fontsize=14)
     ax1.set_ylabel("y", fontsize=14)
@@ -57,9 +57,9 @@ def simulate_one_cow(initial_conds: dict = {}, case_label: str = "generic"):
     plt.tight_layout()
 
     # Save plot
-    save_path = f"figures/periodic_orbit_case_{case_label}.png"
-    plt.savefig(save_path, dpi=300)
-    print(f"[Info] Saved figure to {save_path}")
+    # save_path = f"figures/periodic_orbit_case_{case_label}.png"
+    # plt.savefig(save_path, dpi=300)
+    # print(f"[Info] Saved figure to {save_path}")
 
     plt.show()
 
@@ -101,24 +101,30 @@ def simulate_periodic_orbit_B():
             If beta1 < alpha2, then 1/alpha1 + 1/alpha2 >= 1/beta1 + 1/beta2
         - With these parameters, the orbit is stable but not asymptotically stable (alpha2 > alpha1).
     """
-    alpha_1 = 0.03
-    alpha_2 = 0.08
-    beta_1 = 0.05
+    alpha_1 = 0.08
+    alpha_2 = 0.03
+    beta_1 = 0.03
     beta_2 = 0.09
+    delta = 0.01
+    x0 = 1
+    exponent = (1 + beta_1 / beta_2) / (1 + alpha_2 / alpha_1)
+    y0 = delta ** exponent
 
     # Condition checks
     prod_check = (alpha_2 / alpha_1) * (beta_2 / beta_1)
     assert prod_check > 1, f"Condition failed: prod_check = {prod_check}"
     if beta_1 < alpha_2:
-        sum_alpha_inv = 1/alpha_1 + 1/alpha_2
-        sum_beta_inv = 1/beta_1 + 1/beta_2
+        sum_alpha_inv = 1 / alpha_1 + 1 / alpha_2
+        sum_beta_inv = 1 / beta_1 + 1 / beta_2
         assert sum_alpha_inv >= sum_beta_inv, f"Condition failed: sum_alpha_inv = {sum_alpha_inv}, sum_beta_inv = {sum_beta_inv}"
 
     simulate_one_cow(
         initial_conds={
-            "params": (alpha_1, alpha_2, beta_1, beta_2)
-        }, 
-        case_label="B"
+            "params": (alpha_1, alpha_2, beta_1, beta_2),
+            "init_hiddenstate": (x0, y0),
+            "init_obsstate": "E"
+        },
+        case_label="B_asymptotically_stable"
     )
 
 
@@ -281,10 +287,10 @@ def plot_observable_states_stylized(states_1, states_2, start=3000, title="Obser
 if __name__ == "__main__":
     # simulate_one_cow()
     # simulate_periodic_orbit_A()
-    simulate_periodic_orbit_B()
+    # simulate_periodic_orbit_B()
     # simulate_periodic_orbit_C()
     # simulate_periodic_orbit_D()
-    # full_states_1, full_states_2 = simulate_two_cows()
+    full_states_1, full_states_2 = simulate_two_cows()
 
     # Select time slice
     start = 3000
