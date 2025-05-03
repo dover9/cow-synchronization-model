@@ -7,94 +7,68 @@ from simulation import (
     simulate_periodic_orbit_D,
     simulate_two_cows,
     simulate_herd
-)
-from utils import plot_single_cow, plot_observable_states
-
-def get_transition_times(obs_states, target_state):
-    """
-    Returns the list of time indices where the cow transitions into `target_state`.
-    obs_states: list or array of observable states (0 = E, 1 = R, 2 = S)
-    target_state: integer (0, 1, or 2)
-    """
-    return [
-        t for t in range(1, len(obs_states))
-        if obs_states[t] == target_state and obs_states[t - 1] != target_state
-    ]
-
-def compute_pairwise_synchrony(times_i, times_j, max_shift=10):
-    """
-    Computes the minimum average absolute difference between two time series,
-    allowing for integer shifts in alignment.
-
-    Parameters:
-        times_i, times_j: Lists of time steps (e.g., when cow i and j enter Eating)
-        max_shift: Maximum number of steps to shift for alignment
-
-    Returns:
-        Minimum average absolute difference (float)
-    """
-    min_len = min(len(times_i), len(times_j))
-    # No events; can't measure synchrony
-    if min_len == 0:
-        return float('inf')
     
-    best_delta = float('inf')
+)
+from utils import (
+    plot_single_cow,
+    plot_observable_states,
+    plot_synchrony_vs_sigma,
+    get_transition_times,
+    compute_pairwise_synchrony,
+    compute_herd_synchrony,
+    build_grid_adjacency,
+    build_random_adjacency)
 
-    for shift in range(-max_shift, max_shift + 1):
-        if shift >= 0:
-            shifted_j = times_j[shift:]
-            aligned_len = min(len(times_i), len(shifted_j))
-            cropped_i = times_i[:aligned_len]
-            cropped_j = shifted_j[:aligned_len]
-        else:
-            shifted_i = times_i[-shift:]
-            aligned_len = min(len(shifted_i), len(times_j))
-            cropped_i = shifted_i[:aligned_len]
-            cropped_j = times_j[:aligned_len]
-            
-        if len(cropped_i) == 0:
-            continue
+def choose_adjacency(topology, n_cows, seed=42):
+    if topology == 'full':
+        A = np.ones((n_cows, n_cows)) - np.eye(n_cows)
+    elif topology == 'grid':
+        side = int(np.sqrt(n_cows))
+        assert side ** 2 == n_cows, "Grid topology requires a square number of cows"
+        A = build_grid_adjacency(side, side)
+    elif topology == 'random':
+        np.random.seed(seed)
+        A = np.random.rand(n_cows, n_cows)
+        A = np.triu(A, 1)
+        A = (A + A.T) < 0.3  # keep 30% of edges
+        A = A.astype(int)
+        np.fill_diagonal(A, 0)
+    else:
+        raise ValueError(f"Unknown topology: {topology}")
+    return A
 
-        delta = np.mean(np.abs(np.array(cropped_i) - np.array(cropped_j)))
-        best_delta = min(best_delta, delta)
+sigma_vals = np.linspace(0.001, 0.05, 40)
+n_trials = 30
+n_cows = 10
 
-    return best_delta
+for topology in ['full', 'grid', 'random']:
+    mean_E = []
+    std_E = []
+    mean_R = []
+    std_R = []
 
-def compute_herd_synchrony(state_sequences, max_shift=10):
-    """
-    Computes average herd synchrony over all unordered cow pairs (i, j), i < j.
+    for sigma in sigma_vals:
+        deltas_E = []
+        deltas_R = []
 
-    Parameters:
-        state_sequences: list of observable state arrays (1 per cow)
-        max_shift: maximum time shift allowed when aligning transitions
+        for _ in range(n_trials):
+            A = choose_adjacency(topology, n_cows)
+            herd = simulate_herd(n_cows, sigma_x=sigma, sigma_y=sigma, A=A)
+            delta_E, delta_R, _ = compute_herd_synchrony(herd)
+            deltas_E.append(delta_E)
+            deltas_R.append(delta_R)
 
-    Returns:
-        (avg_delta_E, avg_delta_R, total_delta)
-    """
-    n = len(state_sequences)
-    tau_list = [get_transition_times(states, 0) for states in state_sequences]
-    kappa_list = [get_transition_times(states, 1) for states in state_sequences]
+        mean_E.append(np.mean(deltas_E))
+        std_E.append(np.std(deltas_E))
+        mean_R.append(np.mean(deltas_R))
+        std_R.append(np.std(deltas_R))
 
-    total_delta_E = 0
-    total_delta_R = 0
-    count = 0
-
-    for i in range(n):
-        for j in range(i + 1, n):  # only unordered pairs (i < j)
-            delta_E = compute_pairwise_synchrony(tau_list[i], tau_list[j], max_shift)
-            delta_R = compute_pairwise_synchrony(kappa_list[i], kappa_list[j], max_shift)
-            total_delta_E += delta_E
-            total_delta_R += delta_R
-            count += 1
-
-    if count == 0:
-        return float("inf"), float("inf"), float("inf")
-
-    avg_delta_E = total_delta_E / count
-    avg_delta_R = total_delta_R / count
-    total = avg_delta_E + avg_delta_R
-
-    return avg_delta_E, avg_delta_R, total
+    plot_synchrony_vs_sigma(
+        sigma_vals,
+        mean_E, std_E,
+        mean_R, std_R,
+        title=f"{n_cows}-Cow Herd — {topology.capitalize()} Topology"
+    )
 
 if __name__ == "__main__":
     # # Plot periodic orbit for case A
@@ -170,3 +144,9 @@ if __name__ == "__main__":
 
     # Plot 2-cow simulation
     # plot_observable_states(states_1, states_2, start=start, title="Observable States")
+
+    A_rand = build_random_adjacency(n_cows=10, p=0.4, seed=42)
+    herd_states = simulate_herd(n_cows=10, A=A_rand)
+    delta_E, delta_R, total = compute_herd_synchrony(herd_states)
+    print(f"Random Network, Δ^E = {delta_E:.2f}, Δ^R = {delta_R:.2f}, Δ = {total:.2f}")
+    print(A_rand)

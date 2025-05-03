@@ -179,7 +179,7 @@ def simulate_two_cows(timesteps=10000, stepsize=.5, sigma_x=0.045, sigma_y=0.045
     return np.array(states_1), np.array(states_2)
 
 
-def simulate_herd(n_cows=10, timesteps=10000, stepsize=0.5,
+def simulate_herd(n_cows=10, A=None, timesteps=10000, stepsize=0.5,
                   sigma_x=0.05, sigma_y=0.05,
                   param_base=(0.05, 0.1, 0.05, 0.125),
                   param_noise=0.001,
@@ -188,12 +188,15 @@ def simulate_herd(n_cows=10, timesteps=10000, stepsize=0.5,
     """
     Simulates a herd of n cows with slight parameter variation and coupling.
 
+    Parameters:
+        A: (n_cows x n_cows) adjacency matrix. If None, defaults to fully connected.
+
     Returns:
         List of observable state sequences, one per cow
     """
     base = np.array(param_base)
-
     cows = []
+
     for _ in range(n_cows):
         # Add slight noise to parameters
         noise = np.random.uniform(-param_noise, param_noise, size=4)
@@ -202,11 +205,12 @@ def simulate_herd(n_cows=10, timesteps=10000, stepsize=0.5,
         cows.append(cow)
 
     # Fully connected adjacency matrix (no self-links)
-    A = np.ones((n_cows, n_cows)) - np.eye(n_cows)
+    if A is None:
+        A = np.ones((n_cows, n_cows)) - np.eye(n_cows)
 
+    # Create Herd
     herd = CowHerd(cows, A, sigma_x=sigma_x, sigma_y=sigma_y)
 
-    # Track observable states
     state_history = [[] for _ in range(n_cows)]
 
     for _ in range(timesteps):
