@@ -94,7 +94,7 @@ def choose_adjacency(topology, n_cows, seed=42):
 
 def run_herd_synchrony_experiment():
     sigma_vals = np.linspace(0.001, 0.05, 40)
-    n_trials = 30
+    n_trials = 50
     n_cows = 10
 
     for topology in ['full', 'grid', 'random']:
@@ -125,12 +125,6 @@ def run_herd_synchrony_experiment():
             mean_R, std_R,
             title=f"{n_cows}-Cow Herd — {topology.capitalize()} Topology"
         )
-
-# Set this to True only when you're ready
-RUN_HERD_EXPERIMENT = False
-
-if RUN_HERD_EXPERIMENT:
-    run_herd_synchrony_experiment()
 
 if __name__ == "__main__":
     # # Plot periodic orbit for case A
@@ -207,11 +201,11 @@ if __name__ == "__main__":
     # Plot 2-cow simulation
     # plot_observable_states(states_1, states_2, start=start, title="Observable States")
 
-    plot_synchrony_vs_sigma(epsilon=0.001, n_trials=50)
-    plot_synchrony_vs_sigma(epsilon=0.01, n_trials=50)
+    # plot_synchrony_vs_sigma(epsilon=0.001, n_trials=50)
+    # plot_synchrony_vs_sigma(epsilon=0.01, n_trials=50)
 
     # Set this to True only when you're ready
-    RUN_HERD_EXPERIMENT = False
+    RUN_HERD_EXPERIMENT = True
 
     if RUN_HERD_EXPERIMENT:
         run_herd_synchrony_experiment()
