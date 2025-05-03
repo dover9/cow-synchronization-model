@@ -144,9 +144,8 @@ def simulate_periodic_orbit_D():
     )
 
 
-def simulate_two_cows(timesteps=10000, stepsize=.5, sigma_x=0.045, sigma_y=0.045):
+def simulate_two_cows(epsilon=0.001, timesteps=10000, stepsize=.5, sigma_x=0.045, sigma_y=0.045):
     # Create two cows with nearly identical parameters
-    epsilon = 0.001
     params1 = (0.05 + epsilon, 0.1 + epsilon, 0.05 + epsilon, 0.125 + epsilon)
     params2 = (0.05 - epsilon, 0.1 - epsilon, 0.05 - epsilon, 0.125 - epsilon)
     

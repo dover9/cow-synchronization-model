@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from cow import Cow
+from cowherd import CowHerd
 from simulation import (
     simulate_periodic_orbit_A,
     simulate_periodic_orbit_B,
@@ -17,7 +19,60 @@ from utils import (
     compute_pairwise_synchrony,
     compute_herd_synchrony,
     build_grid_adjacency,
-    build_random_adjacency)
+    build_random_adjacency
+    )
+import time
+
+def plot_synchrony_vs_sigma(epsilon=0.001, n_trials=50, sigma_vals=None):
+    """
+    Plot Δ^E and Δ^R vs coupling strength σ for fixed epsilon.
+    """
+    T = 10000 * 0.5  # or T = timesteps * stepsize, if you prefer
+    if sigma_vals is None:
+        sigma_vals = np.linspace(0, 0.05, 40)
+
+    mean_E, std_E = [], []
+    mean_R, std_R = [], []
+
+    for sigma in sigma_vals:
+        delta_E_list = []
+        delta_R_list = []
+
+        for _ in range(n_trials):
+            states_1, states_2 = simulate_two_cows(
+                epsilon=epsilon,
+                sigma_x=sigma,
+                sigma_y=sigma
+            )
+            tau_1 = get_transition_times(states_1, 0)
+            kappa_1 = get_transition_times(states_1, 1)
+            tau_2 = get_transition_times(states_2, 0)
+            kappa_2 = get_transition_times(states_2, 1)
+            
+            
+            delta_E = compute_pairwise_synchrony(tau_1, tau_2, T)
+            delta_R = compute_pairwise_synchrony(kappa_1, kappa_2, T)
+            delta_E_list.append(delta_E)
+            delta_R_list.append(delta_R)
+
+        mean_E.append(np.mean(delta_E_list))
+        std_E.append(np.std(delta_E_list))
+        mean_R.append(np.mean(delta_R_list))
+        std_R.append(np.std(delta_R_list))
+
+    # Plotting
+    plt.figure(figsize=(8, 5))
+    plt.errorbar(sigma_vals, mean_E, yerr=std_E, label=r'$\Delta^{\mathcal{E}}$', color='blue')
+    plt.errorbar(sigma_vals, mean_R, yerr=std_R, label=r'$\Delta^{\mathcal{R}}$', color='red', linestyle='--')
+
+    plt.xlabel(r'$\sigma_{x,y}$')
+    plt.ylabel("Synchrony Error")
+    plt.title(f"Synchrony vs Coupling Strength (ε = {epsilon})")
+    plt.legend()
+    plt.grid(True, linestyle=':', alpha=0.5)
+    plt.tight_layout()
+    plt.show()
+
 
 def choose_adjacency(topology, n_cows, seed=42):
     if topology == 'full':
@@ -37,38 +92,45 @@ def choose_adjacency(topology, n_cows, seed=42):
         raise ValueError(f"Unknown topology: {topology}")
     return A
 
-sigma_vals = np.linspace(0.001, 0.05, 40)
-n_trials = 30
-n_cows = 10
+def run_herd_synchrony_experiment():
+    sigma_vals = np.linspace(0.001, 0.05, 40)
+    n_trials = 30
+    n_cows = 10
 
-for topology in ['full', 'grid', 'random']:
-    mean_E = []
-    std_E = []
-    mean_R = []
-    std_R = []
+    for topology in ['full', 'grid', 'random']:
+        mean_E = []
+        std_E = []
+        mean_R = []
+        std_R = []
 
-    for sigma in sigma_vals:
-        deltas_E = []
-        deltas_R = []
+        for sigma in sigma_vals:
+            deltas_E = []
+            deltas_R = []
 
-        for _ in range(n_trials):
-            A = choose_adjacency(topology, n_cows)
-            herd = simulate_herd(n_cows, sigma_x=sigma, sigma_y=sigma, A=A)
-            delta_E, delta_R, _ = compute_herd_synchrony(herd)
-            deltas_E.append(delta_E)
-            deltas_R.append(delta_R)
+            for _ in range(n_trials):
+                A = choose_adjacency(topology, n_cows)
+                herd = simulate_herd(n_cows, sigma_x=sigma, sigma_y=sigma, A=A)
+                delta_E, delta_R, _ = compute_herd_synchrony(herd, T=5000)  # Make sure to pass T
+                deltas_E.append(delta_E)
+                deltas_R.append(delta_R)
 
-        mean_E.append(np.mean(deltas_E))
-        std_E.append(np.std(deltas_E))
-        mean_R.append(np.mean(deltas_R))
-        std_R.append(np.std(deltas_R))
+            mean_E.append(np.mean(deltas_E))
+            std_E.append(np.std(deltas_E))
+            mean_R.append(np.mean(deltas_R))
+            std_R.append(np.std(deltas_R))
 
-    plot_synchrony_vs_sigma(
-        sigma_vals,
-        mean_E, std_E,
-        mean_R, std_R,
-        title=f"{n_cows}-Cow Herd — {topology.capitalize()} Topology"
-    )
+        plot_synchrony_vs_sigma(
+            sigma_vals,
+            mean_E, std_E,
+            mean_R, std_R,
+            title=f"{n_cows}-Cow Herd — {topology.capitalize()} Topology"
+        )
+
+# Set this to True only when you're ready
+RUN_HERD_EXPERIMENT = False
+
+if RUN_HERD_EXPERIMENT:
+    run_herd_synchrony_experiment()
 
 if __name__ == "__main__":
     # # Plot periodic orbit for case A
@@ -87,66 +149,69 @@ if __name__ == "__main__":
     # hidden, obs, switches = simulate_periodic_orbit_D()
     # plot_single_cow(hidden, obs, switches, case_label="D")
 
-    # Test: Perfect synchrony
-    tau_1 = [100, 200, 300, 400]
-    tau_2 = [100, 200, 300, 400]
+    # # Test: Perfect synchrony
+    # tau_1 = [100, 200, 300, 400]
+    # tau_2 = [100, 200, 300, 400]
 
-    delta_E = compute_pairwise_synchrony(tau_1, tau_2)
-    print(f"[Perfect match] Δ^E = {delta_E:.2f}")  # Expect 0.00
+    # delta_E = compute_pairwise_synchrony(tau_1, tau_2)
+    # print(f"[Perfect match] Δ^E = {delta_E:.2f}")  # Expect 0.00
 
-    # Test: Constant offset
-    tau_1 = [100, 200, 300, 400]
-    tau_2 = [105, 205, 305, 405]
+    # # Test: Constant offset
+    # tau_1 = [100, 200, 300, 400]
+    # tau_2 = [105, 205, 305, 405]
 
-    delta_E = compute_pairwise_synchrony(tau_1, tau_2)
-    print(f"[Offset by 5] Δ^E = {delta_E:.2f}")  # Expect ~5.00
+    # delta_E = compute_pairwise_synchrony(tau_1, tau_2)
+    # print(f"[Offset by 5] Δ^E = {delta_E:.2f}")  # Expect ~5.00
 
-    # Test: Random
-    tau_1 = [100, 200, 300, 400]
-    tau_2 = [130, 180, 290, 410]
+    # # Test: Random
+    # tau_1 = [100, 200, 300, 400]
+    # tau_2 = [130, 180, 290, 410]
 
-    delta_E = compute_pairwise_synchrony(tau_1, tau_2)
-    print(f"[Random offset] Δ^E = {delta_E:.2f}")  # Expect > 10
+    # delta_E = compute_pairwise_synchrony(tau_1, tau_2)
+    # print(f"[Random offset] Δ^E = {delta_E:.2f}")  # Expect > 10
 
-    # 2-cow simulation
-    states_1, states_2 = simulate_two_cows()
-    herd_states = [states_1, states_2]
+    # # 2-cow simulation
+    # states_1, states_2 = simulate_two_cows()
+    # herd_states = [states_1, states_2]
 
-    # Cow 1
-    tau_1 = get_transition_times(states_1, target_state=0)  # Into Eating
-    kappa_1 = get_transition_times(states_1, target_state=1)  # Into Resting
+    # # Cow 1
+    # tau_1 = get_transition_times(states_1, target_state=0)  # Into Eating
+    # kappa_1 = get_transition_times(states_1, target_state=1)  # Into Resting
 
-    # Cow 2
-    tau_2 = get_transition_times(states_2, target_state=0)
-    kappa_2 = get_transition_times(states_2, target_state=1)
+    # # Cow 2
+    # tau_2 = get_transition_times(states_2, target_state=0)
+    # kappa_2 = get_transition_times(states_2, target_state=1)
 
-    delta_E = compute_pairwise_synchrony(tau_1, tau_2)
-    delta_R = compute_pairwise_synchrony(kappa_1, kappa_2)
-    delta = delta_E + delta_R
+    # delta_E = compute_pairwise_synchrony(tau_1, tau_2)
+    # delta_R = compute_pairwise_synchrony(kappa_1, kappa_2)
+    # delta = delta_E + delta_R
 
-    print(f"Δ^E = {delta_E:.2f}, Δ^R = {delta_R:.2f}, Total Δ = {delta:.2f}")
+    # print(f"Δ^E = {delta_E:.2f}, Δ^R = {delta_R:.2f}, Total Δ = {delta:.2f}")
 
     # states_1, states_2 = simulate_two_cows()
     # herd_states = [states_1, states_2]
 
-    delta_E, delta_R, total = compute_herd_synchrony(herd_states)
-    print(f"Herd Synchrony, Δ^E = {delta_E:.2f}, Δ^R = {delta_R:.2f}, Δ = {total:.2f}")
+    # delta_E, delta_R, total = compute_herd_synchrony(herd_states)
+    # print(f"Herd Synchrony, Δ^E = {delta_E:.2f}, Δ^R = {delta_R:.2f}, Δ = {total:.2f}")
 
-    herd_states = simulate_herd(n_cows=10)
-    delta_E, delta_R, total = compute_herd_synchrony(herd_states)
-    print(f"10-Cow Herd, Δ^E = {delta_E:.2f}, Δ^R = {delta_R:.2f}, Δ = {total:.2f}")
+    # herd_states = simulate_herd(n_cows=10)
+    # delta_E, delta_R, total = compute_herd_synchrony(herd_states)
+    # print(f"10-Cow Herd, Δ^E = {delta_E:.2f}, Δ^R = {delta_R:.2f}, Δ = {total:.2f}")
 
-    # Select time slice
-    start = 3000
-    end = 3200
-    states_1 = states_1[start:end]
-    states_2 = states_2[start:end]
+    # # Select time slice
+    # start = 3000
+    # end = 3200
+    # states_1 = states_1[start:end]
+    # states_2 = states_2[start:end]
 
     # Plot 2-cow simulation
     # plot_observable_states(states_1, states_2, start=start, title="Observable States")
 
-    A_rand = build_random_adjacency(n_cows=10, p=0.4, seed=42)
-    herd_states = simulate_herd(n_cows=10, A=A_rand)
-    delta_E, delta_R, total = compute_herd_synchrony(herd_states)
-    print(f"Random Network, Δ^E = {delta_E:.2f}, Δ^R = {delta_R:.2f}, Δ = {total:.2f}")
-    print(A_rand)
+    plot_synchrony_vs_sigma(epsilon=0.001, n_trials=50)
+    plot_synchrony_vs_sigma(epsilon=0.01, n_trials=50)
+
+    # Set this to True only when you're ready
+    RUN_HERD_EXPERIMENT = False
+
+    if RUN_HERD_EXPERIMENT:
+        run_herd_synchrony_experiment()

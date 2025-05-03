@@ -37,6 +37,7 @@ def plot_single_cow(hidden_states, obs_states, state_change_idxs, case_label="ge
     plt.tight_layout()
     plt.show()
 
+
 def plot_observable_states(states_1, states_2, start=3000, title="Observable States Over Time"):
     timesteps = np.arange(start, start + len(states_1))
 
@@ -65,6 +66,7 @@ def plot_observable_states(states_1, states_2, start=3000, title="Observable Sta
     plt.legend()
     plt.show()
 
+
 def plot_synchrony_vs_sigma(sigma_vals, mean_E, std_E, mean_R, std_R, title="Synchrony vs Coupling Strength"):
     plt.figure(figsize=(8, 5))
 
@@ -85,34 +87,46 @@ def plot_synchrony_vs_sigma(sigma_vals, mean_E, std_E, mean_R, std_R, title="Syn
 # ============================
 # Synchrony Metrics
 # ============================
-def get_transition_times(obs_states, target_state):
+def get_transition_times(obs_states, target_state, min_duration=3):
     """
-    Returns the list of time indices where the cow transitions into `target_state`.
-    obs_states: list or array of observable states (0 = E, 1 = R, 2 = S)
-    target_state: integer (0, 1, or 2)
+    Returns time indices where the cow *enters* `target_state` and remains there
+    for at least `min_duration` steps.
     """
-    return [
-        t for t in range(1, len(obs_states))
-        if obs_states[t] == target_state and obs_states[t - 1] != target_state
-    ]
+    transition_times = []
+    t = 1
+    while t < len(obs_states):
+        if obs_states[t] == target_state and obs_states[t - 1] != target_state:
+            # Check if cow stays in target_state long enough
+            duration = 1
+            while t + duration < len(obs_states) and obs_states[t + duration] == target_state:
+                duration += 1
+            if duration >= min_duration:
+                transition_times.append(t)
+                t += duration  # skip forward
+            else:
+                t += 1  # too short to count, just move on
+        else:
+            t += 1
+    return transition_times
 
-def compute_pairwise_synchrony(times_i, times_j, max_shift=10):
+
+def compute_pairwise_synchrony(times_i, times_j, T, max_shift=10):
     """
     Computes the minimum average absolute difference between two time series,
-    allowing for integer shifts in alignment.
+    allowing integer shifts in alignment and normalizing by the total time.
 
     Parameters:
         times_i, times_j: Lists of time steps (e.g., when cow i and j enter Eating)
-        max_shift: Maximum number of steps to shift for alignment
+        T: Total simulation time (e.g., T = n_steps * dt)
+        max_shift: Maximum number of shifts to align the two series
 
     Returns:
-        Minimum average absolute difference (float)
+        Normalized minimum average absolute difference (float)
     """
     min_len = min(len(times_i), len(times_j))
-    # No events; can't measure synchrony
     if min_len == 0:
         return float('inf')
-    
+
     best_delta = float('inf')
 
     for shift in range(-max_shift, max_shift + 1):
@@ -126,21 +140,23 @@ def compute_pairwise_synchrony(times_i, times_j, max_shift=10):
             aligned_len = min(len(shifted_i), len(times_j))
             cropped_i = shifted_i[:aligned_len]
             cropped_j = times_j[:aligned_len]
-            
+
         if len(cropped_i) == 0:
             continue
 
-        delta = np.mean(np.abs(np.array(cropped_i) - np.array(cropped_j)))
+        delta = np.mean(np.abs(np.array(cropped_i) - np.array(cropped_j))) / T
         best_delta = min(best_delta, delta)
 
     return best_delta
 
-def compute_herd_synchrony(state_sequences, max_shift=10):
+
+def compute_herd_synchrony(state_sequences, T, max_shift=10):
     """
     Computes average herd synchrony over all unordered cow pairs (i, j), i < j.
 
     Parameters:
         state_sequences: list of observable state arrays (1 per cow)
+        T: total simulation time (e.g., steps x dt)
         max_shift: maximum time shift allowed when aligning transitions
 
     Returns:
@@ -156,8 +172,8 @@ def compute_herd_synchrony(state_sequences, max_shift=10):
 
     for i in range(n):
         for j in range(i + 1, n):  # only unordered pairs (i < j)
-            delta_E = compute_pairwise_synchrony(tau_list[i], tau_list[j], max_shift)
-            delta_R = compute_pairwise_synchrony(kappa_list[i], kappa_list[j], max_shift)
+            delta_E = compute_pairwise_synchrony(tau_list[i], tau_list[j], T, max_shift)
+            delta_R = compute_pairwise_synchrony(kappa_list[i], kappa_list[j], T, max_shift)
             total_delta_E += delta_E
             total_delta_R += delta_R
             count += 1
