@@ -47,7 +47,7 @@ def plot_observable_states(states_1, states_2, start=3000, title="Observable Sta
     change_points_1 = get_state_change_points(states_1)
     change_points_2 = get_state_change_points(states_2)
 
-    plt.figure(figsize=(10, 4))
+    plt.figure(figsize=(6, 3))
 
     # Plot full lines
     plt.plot(timesteps, states_1, linestyle='-', color='red', linewidth=1, label='Cow 1')
@@ -110,7 +110,7 @@ def get_transition_times(obs_states, target_state, min_duration=3):
     return transition_times
 
 
-def compute_pairwise_synchrony(times_i, times_j, T, max_shift=10):
+def compute_pairwise_synchrony(times_i, times_j, max_shift=10):
     """
     Computes the minimum average absolute difference between two time series,
     allowing integer shifts in alignment and normalizing by the total time.
@@ -144,15 +144,15 @@ def compute_pairwise_synchrony(times_i, times_j, T, max_shift=10):
         if len(cropped_i) == 0:
             continue
 
-        delta = np.mean(np.abs(np.array(cropped_i) - np.array(cropped_j))) / T
+        delta = np.mean(np.abs(np.array(cropped_i) - np.array(cropped_j))) * (0.5 / 60)
         best_delta = min(best_delta, delta)
 
     return best_delta
 
-
-def compute_herd_synchrony(state_sequences, T, max_shift=10):
+def compute_herd_synchrony(state_sequences, max_shift=10):
     """
-    Computes average herd synchrony over all unordered cow pairs (i, j), i < j.
+    Computes average herd synchrony over all pairs (i, j) including i = j,
+    as defined in Equation (31) of the paper.
 
     Parameters:
         state_sequences: list of observable state arrays (1 per cow)
@@ -168,21 +168,19 @@ def compute_herd_synchrony(state_sequences, T, max_shift=10):
 
     total_delta_E = 0
     total_delta_R = 0
-    count = 0
 
     for i in range(n):
-        for j in range(i + 1, n):  # only unordered pairs (i < j)
-            delta_E = compute_pairwise_synchrony(tau_list[i], tau_list[j], T, max_shift)
-            delta_R = compute_pairwise_synchrony(kappa_list[i], kappa_list[j], T, max_shift)
+        for j in range(n):  # include i == j
+            if i == j:
+                continue  # optional: skip, since Δ_ii = 0
+            delta_E = compute_pairwise_synchrony(tau_list[i], tau_list[j], max_shift)
+            delta_R = compute_pairwise_synchrony(kappa_list[i], kappa_list[j], max_shift)
             total_delta_E += delta_E
             total_delta_R += delta_R
-            count += 1
 
-    if count == 0:
-        return float("inf"), float("inf"), float("inf")
-
-    avg_delta_E = total_delta_E / count
-    avg_delta_R = total_delta_R / count
+    normalizer = n * n
+    avg_delta_E = total_delta_E / normalizer
+    avg_delta_R = total_delta_R / normalizer
     total = avg_delta_E + avg_delta_R
 
     return avg_delta_E, avg_delta_R, total

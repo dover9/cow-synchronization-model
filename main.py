@@ -21,96 +21,66 @@ from utils import (
     build_grid_adjacency,
     build_random_adjacency
     )
-import time
 
-def plot_synchrony_vs_sigma(epsilon=0.001, n_trials=50, sigma_vals=None):
-    """
-    Plot Δ^E and Δ^R vs coupling strength σ for fixed epsilon.
-    """
-    T = 10000 * 0.5  # or T = timesteps * stepsize, if you prefer
-    if sigma_vals is None:
-        sigma_vals = np.linspace(0, 0.05, 40)
-
-    mean_E, std_E = [], []
-    mean_R, std_R = [], []
-
-    for sigma in sigma_vals:
-        delta_E_list = []
-        delta_R_list = []
-
-        for _ in range(n_trials):
-            states_1, states_2 = simulate_two_cows(
-                epsilon=epsilon,
-                sigma_x=sigma,
-                sigma_y=sigma
-            )
-            tau_1 = get_transition_times(states_1, 0)
-            kappa_1 = get_transition_times(states_1, 1)
-            tau_2 = get_transition_times(states_2, 0)
-            kappa_2 = get_transition_times(states_2, 1)
-            
-            
-            delta_E = compute_pairwise_synchrony(tau_1, tau_2, T)
-            delta_R = compute_pairwise_synchrony(kappa_1, kappa_2, T)
-            delta_E_list.append(delta_E)
-            delta_R_list.append(delta_R)
-
-        mean_E.append(np.mean(delta_E_list))
-        std_E.append(np.std(delta_E_list))
-        mean_R.append(np.mean(delta_R_list))
-        std_R.append(np.std(delta_R_list))
-
-    # Plotting
-    plt.figure(figsize=(8, 5))
-    plt.errorbar(sigma_vals, mean_E, yerr=std_E, label=r'$\Delta^{\mathcal{E}}$', color='blue')
-    plt.errorbar(sigma_vals, mean_R, yerr=std_R, label=r'$\Delta^{\mathcal{R}}$', color='red', linestyle='--')
-
-    plt.xlabel(r'$\sigma_{x,y}$')
-    plt.ylabel("Synchrony Error")
-    plt.title(f"Synchrony vs Coupling Strength (ε = {epsilon})")
-    plt.legend()
-    plt.grid(True, linestyle=':', alpha=0.5)
-    plt.tight_layout()
-    plt.show()
-
-
-def choose_adjacency(topology, n_cows, seed=42):
+def choose_adjacency(topology, n_cows, rng=None):
     if topology == 'full':
         A = np.ones((n_cows, n_cows)) - np.eye(n_cows)
     elif topology == 'grid':
-        side = int(np.sqrt(n_cows))
-        assert side ** 2 == n_cows, "Grid topology requires a square number of cows"
-        A = build_grid_adjacency(side, side)
+        # Manually define grid shape for consistent structure
+        assert n_cows == 10, "Grid currently expects 10 cows"
+        A = build_grid_adjacency(rows=2, cols=5)  # Or rows=5, cols=2 for vertical
     elif topology == 'random':
-        np.random.seed(seed)
-        A = np.random.rand(n_cows, n_cows)
-        A = np.triu(A, 1)
-        A = (A + A.T) < 0.3  # keep 30% of edges
+        if rng is None:
+            rng = np.random.default_rng()
+        edge_prob = 0.75
+        A = rng.random((n_cows, n_cows))
+        A = np.triu(A, 1) < edge_prob  # upper triangle only
         A = A.astype(int)
-        np.fill_diagonal(A, 0)
+        A = A + A.T  # make symmetric
+        np.fill_diagonal(A, 0)  # no self-connections
     else:
         raise ValueError(f"Unknown topology: {topology}")
-    return A
+    return A 
 
 def run_herd_synchrony_experiment():
-    sigma_vals = np.linspace(0.001, 0.05, 40)
+    sigma_vals = np.linspace(0.00, 0.05, 50)
     n_trials = 50
     n_cows = 10
+    param_noise = 0.001
+    timesteps = 30000
+    stepsize = 0.5
+    delta = 0.25
 
-    for topology in ['full', 'grid', 'random']:
+    master_rng = np.random.default_rng(seed=42)
+
+    for topology in ['random']: #['full', 'grid', 'random']:
+        print(f"Starting topology: {topology}")
         mean_E = []
         std_E = []
         mean_R = []
         std_R = []
 
         for sigma in sigma_vals:
+            print(f"  σ = {sigma:.4f}")
             deltas_E = []
             deltas_R = []
 
             for _ in range(n_trials):
-                A = choose_adjacency(topology, n_cows)
-                herd = simulate_herd(n_cows, sigma_x=sigma, sigma_y=sigma, A=A)
-                delta_E, delta_R, _ = compute_herd_synchrony(herd, T=5000)  # Make sure to pass T
+                trial_rng = np.random.default_rng(master_rng.integers(1e9))
+                A = choose_adjacency(topology, n_cows, rng=trial_rng)
+
+                herd = simulate_herd(
+                    n_cows=n_cows,
+                    A=A,
+                    sigma_x=sigma,
+                    sigma_y=sigma,
+                    param_noise=param_noise,
+                    timesteps=timesteps,
+                    stepsize=stepsize,
+                    delta=delta
+                )
+
+                delta_E, delta_R, _ = compute_herd_synchrony(herd)
                 deltas_E.append(delta_E)
                 deltas_R.append(delta_R)
 
@@ -119,6 +89,7 @@ def run_herd_synchrony_experiment():
             mean_R.append(np.mean(deltas_R))
             std_R.append(np.std(deltas_R))
 
+        print(f"{topology.capitalize()} topology Δ^R: min={np.min(mean_R):.3f}, max={np.max(mean_R):.3f}")
         plot_synchrony_vs_sigma(
             sigma_vals,
             mean_E, std_E,
@@ -198,7 +169,7 @@ if __name__ == "__main__":
     # states_1 = states_1[start:end]
     # states_2 = states_2[start:end]
 
-    # Plot 2-cow simulation
+    # # Plot 2-cow simulation
     # plot_observable_states(states_1, states_2, start=start, title="Observable States")
 
     # plot_synchrony_vs_sigma(epsilon=0.001, n_trials=50)

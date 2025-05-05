@@ -178,7 +178,7 @@ def simulate_two_cows(epsilon=0.001, timesteps=10000, stepsize=.5, sigma_x=0.045
     return np.array(states_1), np.array(states_2)
 
 
-def simulate_herd(n_cows=10, A=None, timesteps=10000, stepsize=0.5,
+def simulate_herd(n_cows=10, A=None, timesteps=30000, stepsize=0.5,
                   sigma_x=0.05, sigma_y=0.05,
                   param_base=(0.05, 0.1, 0.05, 0.125),
                   param_noise=0.001,
