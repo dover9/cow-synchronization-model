@@ -66,23 +66,38 @@ def plot_observable_states(states_1, states_2, start=3000, title="Observable Sta
     plt.legend()
     plt.show()
 
+TOPOLOGY_LABELS = {
+    'full': 'Fully Connected',
+    'grid': '2D Grid',
+    'random_p0.3': 'Random (p = 0.3)',
+    'random_p0.75': 'Dense Random (p = 0.75)'
+}
 
-def plot_synchrony_vs_sigma(sigma_vals, mean_E, std_E, mean_R, std_R, title="Synchrony vs Coupling Strength"):
+def plot_synchrony_vs_sigma(sigma_vals, mean_E, std_E, mean_R, std_R, topology, n_cows):
+    title = f"{n_cows}-Cow Herd — {TOPOLOGY_LABELS.get(topology, topology)} Topology"
+
     plt.figure(figsize=(8, 5))
+    plt.plot(sigma_vals, mean_E, label=r'$\Delta^{\mathcal{E}}$ (Eating)', color='tab:blue')
+    plt.fill_between(sigma_vals,
+                     np.array(mean_E) - np.array(std_E),
+                     np.array(mean_E) + np.array(std_E),
+                     alpha=0.2, color='tab:blue')
 
-    # Plot Δ^E with solid blue line and error bars
-    plt.errorbar(sigma_vals, mean_E, yerr=std_E, label=r'$\Delta^{\mathcal{E}}$', color='blue', linewidth=1)
+    plt.plot(sigma_vals, mean_R, label=r'$\Delta^{\mathcal{R}}$ (Resting)', color='tab:red')
+    plt.fill_between(sigma_vals,
+                     np.array(mean_R) - np.array(std_R),
+                     np.array(mean_R) + np.array(std_R),
+                     alpha=0.2, color='tab:red')
 
-    # Plot Δ^R with dashed red line and error bars
-    plt.errorbar(sigma_vals, mean_R, yerr=std_R, label=r'$\Delta^{\mathcal{R}}$', color='red', linestyle='--', linewidth=1)
-
-    plt.xlabel(r'$\sigma_{x,y}$', fontsize=14)
-    plt.ylabel('Synchrony Error', fontsize=14)
-    plt.title(title, fontsize=16)
-    plt.grid(True, linestyle=':', alpha=0.6)
-    plt.legend(fontsize=12)
+    plt.xlabel("Coupling Strength ($\sigma$)")
+    plt.ylabel("Mean Synchrony Error (minutes)")
+    plt.title(title)
+    plt.legend()
+    plt.grid(True)
     plt.tight_layout()
-    plt.show()
+    plt.savefig(f"synchrony_{topology}_{n_cows}cows.png")
+    plt.close()
+
 
 # ============================
 # Synchrony Metrics
@@ -152,29 +167,34 @@ def compute_pairwise_synchrony(times_i, times_j, max_shift=10):
 def compute_herd_synchrony(state_sequences, max_shift=10):
     """
     Computes average herd synchrony over all pairs (i, j) including i = j,
-    as defined in Equation (31) of the paper.
+    using Equation (31) from Sun et al. (2022).
 
     Parameters:
         state_sequences: list of observable state arrays (1 per cow)
-        T: total simulation time (e.g., steps x dt)
         max_shift: maximum time shift allowed when aligning transitions
 
     Returns:
-        (avg_delta_E, avg_delta_R, total_delta)
+        (avg_delta_E, avg_delta_R, total_delta) — all in minutes
     """
     n = len(state_sequences)
     tau_list = [get_transition_times(states, 0) for states in state_sequences]
     kappa_list = [get_transition_times(states, 1) for states in state_sequences]
+    print("Transition counts per cow:")
+    print("  Eating :", [len(t) for t in tau_list])
+    print("  Resting:", [len(k) for k in kappa_list])
 
     total_delta_E = 0
     total_delta_R = 0
 
     for i in range(n):
-        for j in range(n):  # include i == j
+        for j in range(n):
             if i == j:
-                continue  # optional: skip, since Δ_ii = 0
-            delta_E = compute_pairwise_synchrony(tau_list[i], tau_list[j], max_shift)
-            delta_R = compute_pairwise_synchrony(kappa_list[i], kappa_list[j], max_shift)
+                delta_E = 0.0
+                delta_R = 0.0
+            else:
+                delta_E = compute_pairwise_synchrony(tau_list[i], tau_list[j], max_shift)
+                delta_R = compute_pairwise_synchrony(kappa_list[i], kappa_list[j], max_shift)
+
             total_delta_E += delta_E
             total_delta_R += delta_R
 

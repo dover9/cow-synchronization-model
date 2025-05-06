@@ -78,6 +78,7 @@ class Cow:
         else:
             return False
 
+
     def coupled_hidden_state_derivs(self, neighbor_states: list[str], sigma_x: float, sigma_y: float) -> tuple[float, float]:
         """
         Compute the derivatives of the hidden states (x, y) for a cow interacting with neighbors.
