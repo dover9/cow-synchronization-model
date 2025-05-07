@@ -1,0 +1,50 @@
+"""Deprecated, abandoned. I think the trig is going to be too compute heavy."""
+
+
+import numpy as np
+
+from cow import Cow
+
+
+class WalkingSim:
+    def __init__(self, 
+                 cows: list[Cow]):
+        self.cows = cows
+        self.cow_positions = []
+        for cow in cows:
+            # generate random initial positions
+            x = np.random.uniform(0, 1)
+            y = np.random.uniform(0, 1)
+            facing: float = np.random.uniform(0, 2 * np.pi)
+            self.cow_positions.append((x, y, facing))
+        self.cow_monocular_vision_angle = 11. / 6. * np.pi
+        self.cow_binocular_vision_angle = np.pi / 4.
+        self.cow_binocular_vision_range = 0.7
+        self.cow_monocular_vision_range = 0.2
+
+    def who_can_cow_see(self, cow_index: int) -> list[int]:
+        """
+        Returns a list of indices of cows that cow_index can see.
+        """
+        cow = self.cows[cow_index]
+        x, y, facing = self.cow_positions[cow_index]
+
+        visible_cows = []
+        for i, (other_x, other_y, other_facing) in enumerate(self.cow_positions):
+            if i == cow_index:
+                continue
+            # check if cow in binocular vision range
+            if np.sqrt((x - other_x) ** 2 + (y - other_y) ** 2) < self.cow_binocular_vision_range:
+                # check if cow in binocular vision angle
+                angle_from_facing = np.arctan2(other_y - y, other_x - x) - facing
+                if -self.cow_binocular_vision_angle / 2 < angle_from_facing < self.cow_binocular_vision_angle / 2:
+                    visible_cows.append(i)
+                    continue
+            # check if cow in monocular vision range
+            if np.sqrt((x - other_x) ** 2 + (y - other_y) ** 2) < self.cow_monocular_vision_range:
+                # check if cow in monocular vision angle
+                angle_from_facing = np.arctan2(other_y - y, other_x - x) - facing
+                if -self.cow_monocular_vision_angle / 2 < angle_from_facing < self.cow_monocular_vision_angle / 2:
+                    visible_cows.append(i)
+                    continue
+        return visible_cows
