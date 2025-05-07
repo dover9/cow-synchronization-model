@@ -1,252 +1,188 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
+import time
 from cow import Cow
 from cowherd import CowHerd
-
-def simulate_one_cow(initial_conds: dict = {}, case_label: str = "generic"):
-    """Simulate one cow for 1000 steps.
-    Make two plots: one of hidden state over time, one of observable state over time.
-    """
-    cow = Cow(**initial_conds)
-    steps = 15000
-    hidden_states = np.zeros((steps, 2))
-    obs_states = np.zeros(steps, dtype=int)
-    state_change_idxs = [0]
-
-    for i in range(steps):
-        hidden_states[i] = cow.x, cow.y
-        obs_states[i] = ["E", "R", "S"].index(cow.obs_state)
-        cow.update_hidden_state()
-        if cow.next_obs_state():
-            print(f"State changed to {cow.obs_state} at step {i}")
-            state_change_idxs.append(i)
-
-    # --- Plotting ---
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 10), gridspec_kw={'hspace': 0.4})
-
-    # Hidden state trajectory
-    ax1.plot(hidden_states[:, 0], hidden_states[:, 1], linewidth=2)
-    ax1.scatter(hidden_states[0, 0], hidden_states[0, 1], color='red', label='Initial State', s=50)
-    for idx in state_change_idxs:
-        ax1.annotate(
-            f"{['E', 'R', 'S'][obs_states[idx]]} (s={idx})",
-            (hidden_states[idx, 0], hidden_states[idx, 1]),
-            textcoords="offset points",
-            xytext=(5, 5),
-            ha='center',
-            fontsize=8,      # smaller font
-            alpha=0.7)        # slightly transparent
-
-    ax1.set_title("Hidden State Trajectory", fontsize=16)
-    ax1.set_xlabel("x", fontsize=14)
-    ax1.set_ylabel("y", fontsize=14)
-    ax1.tick_params(axis='both', which='major', labelsize=12)
-    ax1.grid(True)
-
-    # Observable state over time
-    ax2.plot(obs_states, linewidth=2)
-    ax2.set_yticks([0, 1, 2])
-    ax2.set_yticklabels(["E", "R", "S"], fontsize=12)
-    ax2.set_xlabel("Time Step", fontsize=14)
-    ax2.set_ylabel("Observable State", fontsize=14)
-    ax2.set_title("Observable State Evolution", fontsize=16)
-    ax2.tick_params(axis='both', which='major', labelsize=12)
-    ax2.grid(True)
-
-    plt.tight_layout()
-
-    # Save plot
-    save_path = f"figures/periodic_orbit_case_{case_label}.png"
-    plt.savefig(save_path, dpi=300)
-    print(f"[Info] Saved figure to {save_path}")
-
-    plt.show()
-
-    # fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 8))  # Increase figure size for more vertical space
-    # ax1.plot(hidden_states[:, 0], hidden_states[:, 1])
-    # ax1.scatter(hidden_states[0, 0], hidden_states[0, 1], color='red', label='Initial State')
-    # for idx in state_change_idxs:
-    #     ax1.annotate(f"{['E', 'R', 'S'][obs_states[idx]]} (s={idx})", (hidden_states[idx, 0], hidden_states[idx, 1]),
-    #                  textcoords="offset points", xytext=(5, 5), ha='center')
-    # ax1.set_title("Hidden state")
-    # ax2.plot(obs_states)
-    # ax2.set_yticks([0, 1, 2])
-    # ax2.set_yticklabels(["E", "R", "S"])
-    # ax2.set_title("Observable state")
-    # plt.tight_layout()  # Adjust layout to increase spacing between plots
-    # plt.show()
-
-
-def simulate_periodic_orbit_A():
-    """Simulate a periodic orbit by setting params to match eqn 12"""
-    alpha_1 = np.random.uniform(0, 0.1)
-    beta_1 = np.random.uniform(0, 0.1)
-    alpha_2 = np.random.uniform(0, 0.1)
-    beta_2 = alpha_1 * beta_1 / alpha_2
-    simulate_one_cow(
-        initial_conds={
-            "params": (alpha_1, alpha_2, beta_1, beta_2)
-        },
-        case_label="A"
+from simulation import (
+    simulate_periodic_orbit_A,
+    simulate_periodic_orbit_B,
+    simulate_periodic_orbit_C,
+    simulate_periodic_orbit_D,
+    simulate_herd  
+)
+from utils import (
+    plot_single_cow,
+    plot_synchrony_vs_sigma,
+    get_transition_times,
+    compute_herd_synchrony,
+    build_grid_adjacency,
+    compute_state_proportions,
+    choose_adjacency
     )
 
-
-def simulate_periodic_orbit_B():
-    """Simulate Case B: periodic orbit E -> R -> S -> E.
-
-    Notes:
-        - Conditions:
-            (alpha2 / alpha1) * (beta2 / beta1) > 1
-            If beta1 < alpha2, then 1/alpha1 + 1/alpha2 >= 1/beta1 + 1/beta2
-        - With these parameters, the orbit is stable but not asymptotically stable (alpha2 > alpha1).
+def run_periodic_orbit(case=None):
     """
-    alpha_1 = 0.03
-    alpha_2 = 0.08
-    beta_1 = 0.05
-    beta_2 = 0.09
+    Simulates and plots periodic orbits for one or all cow behavior cases.
 
-    # Condition checks
-    prod_check = (alpha_2 / alpha_1) * (beta_2 / beta_1)
-    assert prod_check > 1, f"Condition failed: prod_check = {prod_check}"
-    if beta_1 < alpha_2:
-        sum_alpha_inv = 1/alpha_1 + 1/alpha_2
-        sum_beta_inv = 1/beta_1 + 1/beta_2
-        assert sum_alpha_inv >= sum_beta_inv, f"Condition failed: sum_alpha_inv = {sum_alpha_inv}, sum_beta_inv = {sum_beta_inv}"
+    Parameters:
+        case (str or None): If None, runs all predefined periodic orbit simulations (A–D).
+                            If a single character (e.g., "A", "B", "C", "D"), only that case is simulated and plotted.
 
-    simulate_one_cow(
-        initial_conds={
-            "params": (alpha_1, alpha_2, beta_1, beta_2)
-        }, 
-        case_label="B"
-    )
-
-
-def simulate_periodic_orbit_C():
-    """Simulate Case C: periodic orbit E -> S -> R -> E.
-
-    Notes:
-        - Conditions:
-            (alpha2 / alpha1) * (beta2 / beta1) > 1
-            1/alpha1 + 1/alpha2 < 1/beta1 + 1/beta2
-            beta1 < alpha2
-        - For asymptotic stability, require beta2 < beta1.
+    Raises:
+        ValueError: If an invalid case label is provided.
     """
-    # Hard-coded values satisfying stability conditions
-    # Note: beta2 > beta1 → orbit is stable but NOT asymptotically stable
-    alpha_1 = 0.04
-    alpha_2 = 0.07
-    beta_1 = 0.03
-    beta_2 = 0.08                                   
+    periodic_cases = {
+        "A": simulate_periodic_orbit_A,
+        "B": simulate_periodic_orbit_B,
+        "C": simulate_periodic_orbit_C,
+        "D": simulate_periodic_orbit_D,
+    }
 
-    # Validate conditions
-    prod_check = (alpha_2 / alpha_1) * (beta_2 / beta_1)
-    sum_alpha_inv = 1 / alpha_1 + 1 / alpha_2
-    sum_beta_inv = 1 / beta_1 + 1 / beta_2
-    assert prod_check > 1, f"Condition failed: prod_check = {prod_check}"
-    assert sum_alpha_inv < sum_beta_inv, f"Condition failed: sum_alpha_inv = {sum_alpha_inv}, sum_beta_inv = {sum_beta_inv}"
-    assert beta_1 < alpha_2, f"Condition failed: beta_1 = {beta_1}, alpha_2 = {alpha_2}"
-
-    # Special initial condition, always start at x = 1
-    delta = 0.01                                    # Minimum hidden state value from Cow class
-    y0 = delta ** (sum_alpha_inv / sum_beta_inv)
-    x0 = 1                                        
-
-    simulate_one_cow(
-        initial_conds={
-            "params": (alpha_1, alpha_2, beta_1, beta_2),
-            "init_hiddenstate": (x0, y0),
-            "init_obsstate": "E"
-        },
-        case_label="C"
-    )
+    if case is None:
+        for label, sim_func in periodic_cases.items():
+            hidden, obs, switches = sim_func()
+            plot_single_cow(hidden, obs, switches, case_label=label)
+    else:
+        case = case.upper()
+        if case not in periodic_cases:
+            raise ValueError(f"Invalid case '{case}'. Valid options are: {list(periodic_cases.keys())}")
+        hidden, obs, switches = periodic_cases[case]()
+        plot_single_cow(hidden, obs, switches, case_label=case)
 
 
-def simulate_periodic_orbit_D():
-    """Simulate Case D: periodic orbit E -> S -> R -> S -> E.
-
-    Notes:
-        - Conditions:
-            (alpha2 / alpha1) * (beta2 / beta1) > 1
-            1/alpha1 + 1/alpha2 = 1/beta1 + 1/beta2
-            beta1 < alpha2
-        - x0 = 1
-        - y0 must satisfy: delta < y0 < delta^(beta1/alpha2)
-        - All orbits are stable but not asymptotically stable.
+def run_herd_synchrony_experiment():
     """
-    alpha_1 = 0.04
-    alpha_2 = 0.08
-    beta_1 = 0.05
-    beta_2 = 1 / (1/alpha_1 + 1/alpha_2 - 1/beta_1)  # 0.05714 approx
+    Runs a series of herd simulations across a range of coupling strengths (sigma values)
+    and computes synchronization metrics under different network topologies.
 
-    # Checks
-    prod_check = (alpha_2 / alpha_1) * (beta_2 / beta_1)
-    sum_alpha_inv = 1/alpha_1 + 1/alpha_2
-    sum_beta_inv = 1/beta_1 + 1/beta_2
-    assert prod_check > 1, f"Condition failed: prod_check = {prod_check}"
-    assert np.isclose(sum_alpha_inv, sum_beta_inv, atol=1e-5), f"Condition failed: sums not equal: {sum_alpha_inv} vs {sum_beta_inv}"
-    assert beta_1 < alpha_2, f"Condition failed: beta1 = {beta_1}, alpha2 = {alpha_2}"
+    The function simulates multiple trials for each sigma value, measures herd synchrony,
+    tracks transition statistics and state proportions, and saves the results to CSV files.
+    It also generates plots of synchrony (Δ^E and Δ^R) versus sigma.
 
-    delta = 0.01
-    lower_bound = delta
-    upper_bound = delta ** (beta_1 / alpha_2)
-    y0 = (lower_bound + upper_bound) / 2
+    Parameters
+    ----------
+    None
 
-    x0 = 1
+    Outputs
+    -------
+    - Plots of synchronization vs sigma for each topology.
+    - CSV file per topology containing trial-level statistics.
+    """
+    sigma_vals = np.linspace(0.00, 0.05, 50)
+    n_trials = 50
+    n_cows = 10
+    param_noise = 0.001
+    timesteps = 30000
+    stepsize = 0.5
+    delta = 0.25
 
-    simulate_one_cow(
-        initial_conds={
-            "params": (alpha_1, alpha_2, beta_1, beta_2),
-            "init_hiddenstate": (x0, y0),
-            "init_obsstate": "E"
-        },
-        case_label="D"
-    )
+    master_rng = np.random.default_rng(seed=42)
 
-def simulate_two_cows(timesteps=10000, stepsize=0.01, sigma_x=0.05, sigma_y=0.05):
-    # Create two cows with nearly identical parameters
-    epsilon = 0.001
-    cow1 = Cow(params=(0.05 + epsilon, 0.1 + epsilon, 0.05 + epsilon, 0.125 + epsilon), init_obsstate="E", delta=0.25)
-    cow2 = Cow(params=(0.05 - epsilon, 0.1 - epsilon, 0.05 - epsilon, 0.125 - epsilon), init_obsstate="E", delta=0.25)
+    trial_stats = {
+        "sigma": [],
+        "topology": [],
+        "n_cows": [],
+        "trial": [],
+        "mean_transitions_e": [],
+        "mean_transitions_r": [],
+        "mean_time_e": [],
+        "mean_time_r": [],
+        "prop_e": [],
+        "prop_r": [],
+        "prop_s": []
+    }
 
-    # Fully connected adjacency matrix
-    adjacency = np.array([
-        [0, 1],
-        [1, 0]
-    ])
+    for topology in ['full', 'grid', 'random_p03', 'random_p075']:
+        print(f"Starting topology: {topology}")
+        mean_E = []
+        std_E = []
+        mean_R = []
+        std_R = []
 
-    herd = CowHerd([cow1, cow2], adjacency, sigma_x=sigma_x, sigma_y=sigma_y)
+        for sigma in sigma_vals:
+            print(f"  σ = {sigma:.4f}")
+            deltas_E = []
+            deltas_R = []
 
-    # Track observable states over time
-    states_1 = []
-    states_2 = []
+            for trial_num in range(n_trials):
+                trial_rng = np.random.default_rng(master_rng.integers(1e9))
+                A = choose_adjacency(topology, n_cows, rng=trial_rng)
 
-    for _ in range(timesteps):
-        states_1.append(["E", "R", "S"].index(cow1.obs_state))
-        states_2.append(["E", "R", "S"].index(cow2.obs_state))
-        herd.step(stepsize)
+                herd = simulate_herd(
+                    n_cows=n_cows,
+                    A=A,
+                    sigma_x=sigma,
+                    sigma_y=sigma,
+                    param_noise=param_noise,
+                    timesteps=timesteps,
+                    stepsize=stepsize,
+                    delta=delta
+                )
 
-    return np.array(states_1), np.array(states_2)
+                e_trans = [get_transition_times(seq, 0) for seq in herd]
+                r_trans = [get_transition_times(seq, 1) for seq in herd]
 
-def plot_observable_states(states_1, states_2):
-    timesteps = len(states_1)
-    plt.figure(figsize=(10, 4))
-    plt.plot(states_1, label="Cow 1", alpha=0.8)
-    plt.plot(states_2, label="Cow 2", alpha=0.8)
-    plt.yticks([0, 1, 2], ["E", "R", "S"])
-    plt.xlabel("Time step")
-    plt.ylabel("Observable state")
-    plt.title("Observable States Over Time for Two Coupled Cows")
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-    
+                trans_counts_e = [len(t) for t in e_trans]
+                trans_counts_r = [len(t) for t in r_trans]
+
+                prop_e, prop_r, prop_s = compute_state_proportions(herd)
+
+                mean_time_e = np.mean(np.diff(e_trans[0])) if len(e_trans[0]) > 1 else np.nan
+                mean_time_r = np.mean(np.diff(r_trans[0])) if len(r_trans[0]) > 1 else np.nan
+
+                trial_stats["sigma"].append(sigma)
+                trial_stats["topology"].append(topology)
+                trial_stats["n_cows"].append(n_cows)
+                trial_stats["trial"].append(trial_num)
+                trial_stats["mean_transitions_e"].append(np.mean(trans_counts_e))
+                trial_stats["mean_transitions_r"].append(np.mean(trans_counts_r))
+                trial_stats["mean_time_e"].append(mean_time_e)
+                trial_stats["mean_time_r"].append(mean_time_r)
+                trial_stats["prop_e"].append(np.mean(prop_e))
+                trial_stats["prop_r"].append(np.mean(prop_r))
+                trial_stats["prop_s"].append(np.mean(prop_s))
+
+                delta_E, delta_R, _ = compute_herd_synchrony(herd)
+                if np.isfinite(delta_E):
+                    deltas_E.append(delta_E)
+                if np.isfinite(delta_R):
+                    deltas_R.append(delta_R)
+
+            print(f"  σ = {sigma:.4f}: kept {len(deltas_E)} eating, {len(deltas_R)} resting trials")
+
+            mean_E.append(np.mean(deltas_E))
+            std_E.append(np.std(deltas_E))
+            mean_R.append(np.mean(deltas_R))
+            std_R.append(np.std(deltas_R))
+
+        print(f"{topology.capitalize()} topology Δ^R: min={np.min(mean_R):.3f}, max={np.max(mean_R):.3f}")
+        plot_synchrony_vs_sigma(
+            sigma_vals,
+            mean_E, std_E,
+            mean_R, std_R,
+            topology,
+            n_cows
+        )
+
+        # Save stats to CSV
+        df = pd.DataFrame(trial_stats)
+        df.to_csv(f"herd_stats_{topology}_{n_cows}cows.csv", index=False)
+        trial_stats = {key: [] for key in trial_stats}  # reset for next topology
+
 
 if __name__ == "__main__":
-    # simulate_one_cow()
-    # simulate_periodic_orbit_A()
-    # simulate_periodic_orbit_B()
-    # simulate_periodic_orbit_C()
-    # simulate_periodic_orbit_D()
-    states_1, states_2 = simulate_two_cows()
-    plot_observable_states(states_1, states_2)
+    # Run all periodic orbits
+    run_periodic_orbit()
+
+    # Or run just one
+    # run_periodic_orbit("B")
+
+    # Set this to True only when you're ready 
+    # 10 cows @ 30,000 steps/0.5 step size takes 90 minutes per topology (there are 4 topologies)
+    RUN_HERD_EXPERIMENT = True
+
+    if RUN_HERD_EXPERIMENT:
+        start = time.time()
+        run_herd_synchrony_experiment()
+        print(f"Total time: {time.time() - start:.1f} seconds")
