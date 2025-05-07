@@ -152,12 +152,6 @@ def simulate_two_cows(epsilon=0.001, timesteps=10000, stepsize=.5, sigma_x=0.045
     cow1 = Cow(params=params1, init_obsstate="E", delta=0.25)
     cow2 = Cow(params=params2, init_obsstate="E", delta=0.25)
     
-    # # Fixed initial internal state: x = 1, y = 0.1
-    # init_state = (1.0, 0.1)
-    # params1 = params2 = (0.05, 0.1, 0.05, 0.125)
-    # cow1 = Cow(params=params1, init_obsstate="E", init_hiddenstate=init_state, delta=0.25)
-    # cow2 = Cow(params=params2, init_obsstate="E", init_hiddenstate=init_state, delta=0.25)
-
     # Fully connected adjacency matrix
     adjacency = np.array([
         [0, 1],
@@ -182,7 +176,6 @@ def simulate_herd(n_cows=10, A=None, timesteps=30000, stepsize=0.5,
                   sigma_x=0.05, sigma_y=0.05,
                   param_base=(0.05, 0.1, 0.05, 0.125),
                   param_noise=0.001,
-                  init_state=(1.0, 0.1),
                   delta=0.25):
     """
     Simulates a herd of n cows with slight parameter variation and coupling.
@@ -200,7 +193,7 @@ def simulate_herd(n_cows=10, A=None, timesteps=30000, stepsize=0.5,
         # Add slight noise to parameters
         noise = np.random.uniform(-param_noise, param_noise, size=4)
         params = tuple(base + noise)
-        cow = Cow(params=params, init_obsstate="E", init_hiddenstate=init_state, delta=delta)
+        cow = Cow(params=params, init_obsstate="E", delta=delta)
         cows.append(cow)
 
     # Fully connected adjacency matrix (no self-links)

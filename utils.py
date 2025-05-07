@@ -272,6 +272,9 @@ def build_random_adjacency(n_cows, p=0.3, seed=None):
 
     return A
 
+# ============================
+# State Analysis Utilities
+# ============================
 def compute_state_proportions(state_sequences):
     """
     Computes the proportion of time each cow spends in Eating, Resting, and Standing states.
@@ -294,9 +297,6 @@ def compute_state_proportions(state_sequences):
     props = counts / total_time
     return props[:, 0], props[:, 1], props[:, 2]  # E, R, S
 
-# ============================
-# State Analysis Utilities
-# ============================
 def choose_adjacency(topology, n_cows, rng=None):
     """
     Builds an adjacency matrix representing cow interactions based on the specified network topology.
