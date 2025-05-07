@@ -9,60 +9,66 @@ from simulation import (
     simulate_periodic_orbit_B,
     simulate_periodic_orbit_C,
     simulate_periodic_orbit_D,
-    simulate_one_cow,
-    simulate_two_cows,
-    simulate_herd
-    
+    simulate_herd  
 )
 from utils import (
     plot_single_cow,
-    plot_observable_states,
     plot_synchrony_vs_sigma,
     get_transition_times,
-    compute_pairwise_synchrony,
     compute_herd_synchrony,
     build_grid_adjacency,
-    build_random_adjacency
+    compute_state_proportions,
+    choose_adjacency
     )
 
-def compute_state_proportions(state_sequences):
-    n_cows = len(state_sequences)
-    total_time = len(state_sequences[0])
-    counts = np.zeros((n_cows, 3))  # E, R, S
+def run_periodic_orbit(case=None):
+    """
+    Simulates and plots periodic orbits for one or all cow behavior cases.
 
-    for i, seq in enumerate(state_sequences):
-        for state in [0, 1, 2]:
-            counts[i, state] = np.sum(np.array(seq) == state)
+    Parameters:
+        case (str or None): If None, runs all predefined periodic orbit simulations (A–D).
+                            If a single character (e.g., "A", "B", "C", "D"), only that case is simulated and plotted.
 
-    props = counts / total_time
-    return props[:, 0], props[:, 1], props[:, 2]  # E, R, S
+    Raises:
+        ValueError: If an invalid case label is provided.
+    """
+    periodic_cases = {
+        "A": simulate_periodic_orbit_A,
+        "B": simulate_periodic_orbit_B,
+        "C": simulate_periodic_orbit_C,
+        "D": simulate_periodic_orbit_D,
+    }
 
-def choose_adjacency(topology, n_cows, rng=None):
-    if topology == 'full':
-        A = np.ones((n_cows, n_cows)) - np.eye(n_cows)
-    elif topology == 'grid':
-        assert n_cows == 10, "Grid currently expects 10 cows"
-        A = build_grid_adjacency(rows=2, cols=5)
-    elif topology.startswith('random_p'):
-        if rng is None:
-            rng = np.random.default_rng()
-        if topology == 'random_p03':
-            edge_prob = 0.3
-        elif topology == 'random_p075':
-            edge_prob = 0.75
-        else:
-            raise ValueError(f"Unrecognized random topology: {topology}")
-        A = rng.random((n_cows, n_cows))
-        A = np.triu(A, 1) < edge_prob
-        A = A.astype(int)
-        A = A + A.T
-        np.fill_diagonal(A, 0)
+    if case is None:
+        for label, sim_func in periodic_cases.items():
+            hidden, obs, switches = sim_func()
+            plot_single_cow(hidden, obs, switches, case_label=label)
     else:
-        raise ValueError(f"Unknown topology: {topology}")
-    return A
+        case = case.upper()
+        if case not in periodic_cases:
+            raise ValueError(f"Invalid case '{case}'. Valid options are: {list(periodic_cases.keys())}")
+        hidden, obs, switches = periodic_cases[case]()
+        plot_single_cow(hidden, obs, switches, case_label=case)
 
 
 def run_herd_synchrony_experiment():
+    """
+    Runs a series of herd simulations across a range of coupling strengths (sigma values)
+    and computes synchronization metrics under different network topologies.
+
+    The function simulates multiple trials for each sigma value, measures herd synchrony,
+    tracks transition statistics and state proportions, and saves the results to CSV files.
+    It also generates plots of synchrony (Δ^E and Δ^R) versus sigma.
+
+    Parameters
+    ----------
+    None
+
+    Outputs
+    -------
+    - Plots of synchronization vs sigma for each topology.
+    - CSV file per topology containing trial-level statistics.
+    """
     sigma_vals = np.linspace(0.00, 0.05, 50)
     n_trials = 50
     n_cows = 10
@@ -87,9 +93,7 @@ def run_herd_synchrony_experiment():
         "prop_s": []
     }
 
-    # for topology in ['full', 'grid', 'random_p03', 'random_p075']:
-    # for topology in ['grid', 'random_p03', 'random_p075']:
-    for topology in ['random_p075']:
+    for topology in ['full', 'grid', 'random_p03', 'random_p075']:
         print(f"Starting topology: {topology}")
         mean_E = []
         std_E = []
@@ -168,38 +172,14 @@ def run_herd_synchrony_experiment():
 
 
 if __name__ == "__main__":
-    # # Plot periodic orbit for case A
-    # hidden, obs, switches = simulate_periodic_orbit_A()
-    # plot_single_cow(hidden, obs, switches, case_label="A")
+    # Run all periodic orbits
+    run_periodic_orbit()
 
-    # # Plot periodic orbit for case B
-    # hidden, obs, switches = simulate_periodic_orbit_B()
-    # plot_single_cow(hidden, obs, switches, case_label="B")
+    # Or run just one
+    # run_periodic_orbit("B")
 
-    # # Plot periodic orbit for case C
-    # hidden, obs, switches = simulate_periodic_orbit_C()
-    # plot_single_cow(hidden, obs, switches, case_label="C")
-
-    # # Plot periodic orbit for case D
-    # hidden, obs, switches = simulate_periodic_orbit_D()
-    # plot_single_cow(hidden, obs, switches, case_label="D")
-
-   
-    # # Cow 1
-    # tau_1 = get_transition_times(states_1, target_state=0)  # Into Eating
-    # kappa_1 = get_transition_times(states_1, target_state=1)  # Into Resting
-
-    # # Cow 2
-    # tau_2 = get_transition_times(states_2, target_state=0)
-    # kappa_2 = get_transition_times(states_2, target_state=1)
-
-    # delta_E = compute_pairwise_synchrony(tau_1, tau_2)
-    # delta_R = compute_pairwise_synchrony(kappa_1, kappa_2)
-    # delta = delta_E + delta_R
-
-    # print(f"Δ^E = {delta_E:.2f}, Δ^R = {delta_R:.2f}, Total Δ = {delta:.2f}")
-
-    # Set this to True only when you're ready
+    # Set this to True only when you're ready 
+    # 10 cows @ 30,000 steps/0.5 step size takes 90 minutes per topology (there are 4 topologies)
     RUN_HERD_EXPERIMENT = True
 
     if RUN_HERD_EXPERIMENT:

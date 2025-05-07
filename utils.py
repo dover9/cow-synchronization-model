@@ -271,3 +271,80 @@ def build_random_adjacency(n_cows, p=0.3, seed=None):
                 A[j, i] = 1  # make it symmetric
 
     return A
+
+def compute_state_proportions(state_sequences):
+    """
+    Computes the proportion of time each cow spends in Eating, Resting, and Standing states.
+
+    Parameters:
+        state_sequences (list of lists): Each inner list contains the state sequence (0=E, 1=R, 2=S) for one cow.
+
+    Returns:
+        tuple of np.ndarray: Three arrays of shape (n_cows,) corresponding to the proportion of time in
+                             Eating (E), Resting (R), and Standing (S) states, respectively.
+    """
+    n_cows = len(state_sequences)
+    total_time = len(state_sequences[0])
+    counts = np.zeros((n_cows, 3))  # E, R, S
+
+    for i, seq in enumerate(state_sequences):
+        for state in [0, 1, 2]:
+            counts[i, state] = np.sum(np.array(seq) == state)
+
+    props = counts / total_time
+    return props[:, 0], props[:, 1], props[:, 2]  # E, R, S
+
+# ============================
+# State Analysis Utilities
+# ============================
+def choose_adjacency(topology, n_cows, rng=None):
+    """
+    Builds an adjacency matrix representing cow interactions based on the specified network topology.
+
+    Parameters
+    ----------
+    topology : str
+        The type of topology to use. Supported options:
+        - 'full': Fully connected network (complete graph)
+        - 'grid': 2x5 grid layout (expects n_cows == 10)
+        - 'random_p03': Random network with edge probability 0.3
+        - 'random_p075': Random network with edge probability 0.75
+    n_cows : int
+        Number of cows in the herd.
+    rng : np.random.Generator, optional
+        A random number generator instance. If None, a new default generator is used.
+
+    Returns
+    -------
+    A : np.ndarray
+        An (n_cows x n_cows) adjacency matrix with 1s for connections and 0s otherwise.
+
+    Raises
+    ------
+    AssertionError
+        If `topology` is 'grid' but `n_cows` is not 10.
+    ValueError
+        If `topology` is not recognized.
+    """
+    if topology == 'full':
+        A = np.ones((n_cows, n_cows)) - np.eye(n_cows)
+    elif topology == 'grid':
+        assert n_cows == 10, "Grid currently expects 10 cows"
+        A = build_grid_adjacency(rows=2, cols=5)
+    elif topology.startswith('random_p'):
+        if rng is None:
+            rng = np.random.default_rng()
+        if topology == 'random_p03':
+            edge_prob = 0.3
+        elif topology == 'random_p075':
+            edge_prob = 0.75
+        else:
+            raise ValueError(f"Unrecognized random topology: {topology}")
+        A = rng.random((n_cows, n_cows))
+        A = np.triu(A, 1) < edge_prob
+        A = A.astype(int)
+        A = A + A.T
+        np.fill_diagonal(A, 0)
+    else:
+        raise ValueError(f"Unknown topology: {topology}")
+    return A
