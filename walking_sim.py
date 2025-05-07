@@ -1,8 +1,12 @@
+import time
+
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from cow import Cow
 from cowherd import CowHerd
+from utils import get_transition_times, compute_state_proportions, compute_herd_synchrony, plot_synchrony_vs_sigma
 
 
 class WalkingSim:
@@ -106,6 +110,158 @@ def simulate_walking_cowherd(n_cows: int, n_steps: int):
         plt.plot(x, y, label=f"Cow {i}")
     plt.title("Cow Positions Over Time")
 
+
+def simulate_herd(n_cows=10, 
+                  timesteps=30000, 
+                  stepsize=0.5,
+                  sigma_x=0.05, 
+                  sigma_y=0.05,
+                  param_base=(0.05, 0.1, 0.05, 0.125),
+                  param_noise=0.001,
+                  init_state=(1.0, 0.1),
+                  delta=0.25):
+    """
+    Copied from simulation.py, adapted to use walking.
+    """
+    base = np.array(param_base)
+    cows = []
+
+    for _ in range(n_cows):
+        # Add slight noise to parameters
+        noise = np.random.uniform(-param_noise, param_noise, size=4)
+        params = tuple(base + noise)
+        cow = Cow(params=params, init_obsstate="E", init_hiddenstate=init_state, delta=delta)
+        cows.append(cow)
+
+    sim = WalkingSim(cows)
+
+    # Create Herd
+    herd = CowHerd(cows, sim.generate_adjacency_matrix(), sigma_x=sigma_x, sigma_y=sigma_y)
+
+    state_history = [[] for _ in range(n_cows)]
+    position_history = [[] for _ in range(n_cows)]
+
+    for _ in range(timesteps):
+        herd.adjacency = sim.generate_adjacency_matrix()
+        herd.step(stepsize)
+        sim.update_positions()
+        for i, cow in enumerate(cows):
+            state_history[i].append(["E", "R", "S"].index(cow.obs_state))
+            position_history[i].append(sim.cow_positions[i])
+
+    return state_history, position_history
+
+
+
+def run_herd_synchrony_experiment():
+    """
+    Adapted from main.py.
+    """
+    sigma_vals = np.linspace(0.00, 0.05, 50)
+    # n_trials = 50
+    n_trials = 5
+    # n_cows = 10
+    n_cows = 5
+    param_noise = 0.001
+    timesteps = 30000
+    stepsize = 0.5
+    delta = 0.25
+
+    master_rng = np.random.default_rng(seed=42)
+
+    trial_stats = {
+        "sigma": [],
+        "topology": [],
+        "n_cows": [],
+        "trial": [],
+        "mean_transitions_e": [],
+        "mean_transitions_r": [],
+        "mean_time_e": [],
+        "mean_time_r": [],
+        "prop_e": [],
+        "prop_r": [],
+        "prop_s": []
+    }
+
+    topology = "WALKING_COWHERD"
+
+    print(f"Starting topology: {topology}")
+    mean_E = []
+    std_E = []
+    mean_R = []
+    std_R = []
+
+    for sigma in sigma_vals:
+        print(f"  σ = {sigma:.4f}")
+        deltas_E = []
+        deltas_R = []
+
+        for trial_num in range(n_trials):
+            trial_rng = np.random.default_rng(master_rng.integers(1e9))
+
+            herd, herd_pos_hist = simulate_herd(
+                n_cows=n_cows,
+                sigma_x=sigma,
+                sigma_y=sigma,
+                param_noise=param_noise,
+                timesteps=timesteps,
+                stepsize=stepsize,
+                delta=delta
+            )
+
+            e_trans = [get_transition_times(seq, 0) for seq in herd]
+            r_trans = [get_transition_times(seq, 1) for seq in herd]
+
+            trans_counts_e = [len(t) for t in e_trans]
+            trans_counts_r = [len(t) for t in r_trans]
+
+            prop_e, prop_r, prop_s = compute_state_proportions(herd)
+
+            mean_time_e = np.mean(np.diff(e_trans[0])) if len(e_trans[0]) > 1 else np.nan
+            mean_time_r = np.mean(np.diff(r_trans[0])) if len(r_trans[0]) > 1 else np.nan
+
+            trial_stats["sigma"].append(sigma)
+            trial_stats["topology"].append(topology)
+            trial_stats["n_cows"].append(n_cows)
+            trial_stats["trial"].append(trial_num)
+            trial_stats["mean_transitions_e"].append(np.mean(trans_counts_e))
+            trial_stats["mean_transitions_r"].append(np.mean(trans_counts_r))
+            trial_stats["mean_time_e"].append(mean_time_e)
+            trial_stats["mean_time_r"].append(mean_time_r)
+            trial_stats["prop_e"].append(np.mean(prop_e))
+            trial_stats["prop_r"].append(np.mean(prop_r))
+            trial_stats["prop_s"].append(np.mean(prop_s))
+
+            delta_E, delta_R, _ = compute_herd_synchrony(herd)
+            if np.isfinite(delta_E):
+                deltas_E.append(delta_E)
+            if np.isfinite(delta_R):
+                deltas_R.append(delta_R)
+
+        print(f"  σ = {sigma:.4f}: kept {len(deltas_E)} eating, {len(deltas_R)} resting trials")
+
+        mean_E.append(np.mean(deltas_E))
+        std_E.append(np.std(deltas_E))
+        mean_R.append(np.mean(deltas_R))
+        std_R.append(np.std(deltas_R))
+
+    print(f"{topology} topology Δ^R: min={np.min(mean_R):.3f}, max={np.max(mean_R):.3f}")
+    plot_synchrony_vs_sigma(
+        sigma_vals,
+        mean_E, std_E,
+        mean_R, std_R,
+        topology,
+        n_cows
+    )
+
+    # Save stats to CSV
+    df = pd.DataFrame(trial_stats)
+    df.to_csv(f"herd_stats_{topology}_{n_cows}cows.csv", index=False)
+    trial_stats = {key: [] for key in trial_stats}  # reset for next topology
+
+
 if __name__ == "__main__":
-    simulate_walking_cowherd(5, 10000)
-    plt.show()
+    start = time.time()
+    run_herd_synchrony_experiment()
+    end = time.time()
+    print(f"Total time: {end - start:.2f} seconds")
