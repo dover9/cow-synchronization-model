@@ -70,7 +70,8 @@ TOPOLOGY_LABELS = {
     'full': 'Fully Connected',
     'grid': '2D Grid',
     'random_p0.3': 'Random (p = 0.3)',
-    'random_p0.75': 'Dense Random (p = 0.75)'
+    'random_p0.75': 'Dense Random (p = 0.75)',
+    'WALKING_COWHERD': 'Walking Cowherd',
 }
 
 def plot_synchrony_vs_sigma(sigma_vals, mean_E, std_E, mean_R, std_R, topology, n_cows):
@@ -97,6 +98,65 @@ def plot_synchrony_vs_sigma(sigma_vals, mean_E, std_E, mean_R, std_R, topology, 
     plt.tight_layout()
     plt.savefig(f"synchrony_{topology}_{n_cows}cows.png")
     plt.close()
+
+
+def plot_synchrony_vs_viz(vision_vals, mean_E, std_E, mean_R, std_R, topology, n_cows,
+                           filename: str = None):
+    title = f"{n_cows}-Cow Herd — {TOPOLOGY_LABELS.get(topology, topology)} Topology"
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(vision_vals, mean_E, label=r'$\Delta^{\mathcal{E}}$ (Eating)', color='tab:blue')
+    plt.fill_between(vision_vals,
+                     np.array(mean_E) - np.array(std_E),
+                     np.array(mean_E) + np.array(std_E),
+                     alpha=0.2, color='tab:blue')
+
+    plt.plot(vision_vals, mean_R, label=r'$\Delta^{\mathcal{R}}$ (Resting)', color='tab:red')
+    plt.fill_between(vision_vals,
+                     np.array(mean_R) - np.array(std_R),
+                     np.array(mean_R) + np.array(std_R),
+                     alpha=0.2, color='tab:red')
+
+    plt.xlabel("Cow Vision Radius")
+    plt.ylabel("Mean Synchrony Error (minutes)")
+    plt.title(title)
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    if filename is None:
+        filename = f"synchrony_{topology}_{n_cows}cows.png"
+    plt.savefig(filename)
+    plt.close()
+
+
+def plot_synchrony_vs_mvmt(movement_vals, mean_E, std_E, mean_R, std_R, topology, n_cows,
+                           filename: str = None):
+    title = f"{n_cows}-Cow Herd — {TOPOLOGY_LABELS.get(topology, topology)} Topology"
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(movement_vals, mean_E, label=r'$\Delta^{\mathcal{E}}$ (Eating)', color='tab:blue')
+    plt.fill_between(movement_vals,
+                     np.array(mean_E) - np.array(std_E),
+                     np.array(mean_E) + np.array(std_E),
+                     alpha=0.2, color='tab:blue')
+
+    plt.plot(movement_vals, mean_R, label=r'$\Delta^{\mathcal{R}}$ (Resting)', color='tab:red')
+    plt.fill_between(movement_vals,
+                     np.array(mean_R) - np.array(std_R),
+                     np.array(mean_R) + np.array(std_R),
+                     alpha=0.2, color='tab:red')
+
+    plt.xlabel("Cow Step Size")
+    plt.ylabel("Mean Synchrony Error (minutes)")
+    plt.title(title)
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    if filename is None:
+        filename = f"synchrony_{topology}_{n_cows}cows.png"
+    plt.savefig(filename)
+    plt.close()
+
 
 
 # ============================
@@ -164,7 +224,7 @@ def compute_pairwise_synchrony(times_i, times_j, max_shift=10):
 
     return best_delta
 
-def compute_herd_synchrony(state_sequences, max_shift=10):
+def compute_herd_synchrony(state_sequences, max_shift=10, verbose: bool = True):
     """
     Computes average herd synchrony over all pairs (i, j) including i = j,
     using Equation (31) from Sun et al. (2022).
@@ -179,9 +239,9 @@ def compute_herd_synchrony(state_sequences, max_shift=10):
     n = len(state_sequences)
     tau_list = [get_transition_times(states, 0) for states in state_sequences]
     kappa_list = [get_transition_times(states, 1) for states in state_sequences]
-    print("Transition counts per cow:")
-    print("  Eating :", [len(t) for t in tau_list])
-    print("  Resting:", [len(k) for k in kappa_list])
+    if verbose: print("Transition counts per cow:")
+    if verbose: print("  Eating :", [len(t) for t in tau_list])
+    if verbose: print("  Resting:", [len(k) for k in kappa_list])
 
     total_delta_E = 0
     total_delta_R = 0
