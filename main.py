@@ -173,7 +173,7 @@ def run_herd_synchrony_experiment():
 
 if __name__ == "__main__":
     # Run all periodic orbits
-    run_periodic_orbit()
+    # run_periodic_orbit()
 
     # Or run just one
     # run_periodic_orbit("B")
