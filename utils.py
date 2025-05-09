@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 # ============================
 # Plotting Utilities
@@ -156,6 +157,43 @@ def plot_synchrony_vs_mvmt(movement_vals, mean_E, std_E, mean_R, std_R, topology
         filename = f"synchrony_{topology}_{n_cows}cows.png"
     plt.savefig(filename)
     plt.close()
+
+
+def plot_synchrony_vs_vizmvmt(vision_vals, movement_vals, mean_E, std_E, mean_R, std_R,
+                                topology, n_cows, filename: str = None):
+    # 3d plotly graph
+    fig = go.Figure()
+
+    fig.add_trace(go.Surface(
+        z=mean_E,
+        x=vision_vals,
+        y=movement_vals,
+        colorscale='Blues',
+        name='Eating Synchrony'
+    ))
+
+    fig.add_trace(go.Surface(
+        z=mean_R,
+        x=vision_vals,
+        y=movement_vals,
+        colorscale='Reds',
+        name='Resting Synchrony',
+        opacity=0.7
+    ))
+
+    fig.update_layout(
+        title=f"{n_cows}-Cow Herd — {TOPOLOGY_LABELS.get(topology, topology)} Topology",
+        scene=dict(
+            xaxis_title="Vision Radius",
+            yaxis_title="Movement Step Size",
+            zaxis_title="Mean Synchrony Error (minutes)"
+        ),
+        margin=dict(l=0, r=0, b=0, t=40)
+    )
+
+    if filename is None:
+        filename = f"synchrony_vizmvmt_{topology}_{n_cows}cows.html"
+    fig.write_html(filename)
 
 
 

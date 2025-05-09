@@ -7,7 +7,7 @@ import pandas as pd
 
 from cow import Cow
 from cowherd import CowHerd
-from utils import get_transition_times, compute_state_proportions, compute_herd_synchrony, plot_synchrony_vs_mvmt, plot_synchrony_vs_sigma, plot_synchrony_vs_viz
+from utils import get_transition_times, compute_state_proportions, compute_herd_synchrony, plot_synchrony_vs_mvmt, plot_synchrony_vs_sigma, plot_synchrony_vs_viz, plot_synchrony_vs_vizmvmt
 
 
 class WalkingSim:
@@ -500,8 +500,128 @@ def run_herd_synchrony_experiment_vary_vision(verbose: bool = False):
     trial_stats = {key: [] for key in trial_stats}  # reset for next topology
 
 
+
+def run_herd_synchrony_experiment_vary_mvmt_viz(verbose: bool = False):
+    """
+    Adapted from main.py.
+    """
+    sigma = 0.05
+    n_trials = 20
+    n_cows = 10
+    param_noise = 0.001
+    timesteps = 30000
+    stepsize = 0.5
+    delta = 0.25
+    movement_vals = np.linspace(0.01, 0.1, 10)
+    vision_vals = np.linspace(0.01, 0.4, 10)
+
+    master_rng = np.random.default_rng(seed=42)
+
+    trial_stats = {
+        "sigma": [],
+        "topology": [],
+        "n_cows": [],
+        "trial": [],
+        "mean_transitions_e": [],
+        "mean_transitions_r": [],
+        "mean_time_e": [],
+        "mean_time_r": [],
+        "prop_e": [],
+        "prop_r": [],
+        "prop_s": [],
+        "movement_range": [],
+        "vision_range": []
+    }
+
+    topology = "WALKING_COWHERD"
+
+    if verbose: print(f"Starting topology: {topology}")
+    mean_E = np.zeros((len(movement_vals), len(vision_vals)))
+    std_E = np.zeros((len(movement_vals), len(vision_vals)))
+    mean_R = np.zeros((len(movement_vals), len(vision_vals)))
+    std_R = np.zeros((len(movement_vals), len(vision_vals)))
+
+    for i, movement_val in enumerate(tqdm(movement_vals, desc="Movement values")):
+        for j, vision_val in enumerate(tqdm(vision_vals, desc="Vision values", leave=False)):
+            if verbose: print(f"  mv = {movement_val:.4f}")
+            deltas_E = []
+            deltas_R = []
+
+            for trial_num in tqdm(range(n_trials), desc="Trials", unit="trial", leave=False):
+                trial_rng = np.random.default_rng(master_rng.integers(1e9))
+
+                herd, herd_pos_hist = simulate_herd(
+                    n_cows=n_cows,
+                    sigma_x=sigma,
+                    sigma_y=sigma,
+                    param_noise=param_noise,
+                    timesteps=timesteps,
+                    stepsize=stepsize,
+                    delta=delta,
+                    cow_movement_range=movement_val,
+                    cow_vision_range=vision_val,
+                )
+
+                e_trans = [get_transition_times(seq, 0) for seq in herd]
+                r_trans = [get_transition_times(seq, 1) for seq in herd]
+
+                trans_counts_e = [len(t) for t in e_trans]
+                trans_counts_r = [len(t) for t in r_trans]
+
+                prop_e, prop_r, prop_s = compute_state_proportions(herd)
+
+                mean_time_e = np.mean(np.diff(e_trans[0])) if len(e_trans[0]) > 1 else np.nan
+                mean_time_r = np.mean(np.diff(r_trans[0])) if len(r_trans[0]) > 1 else np.nan
+
+                trial_stats["sigma"].append(sigma)
+                trial_stats["topology"].append(topology)
+                trial_stats["n_cows"].append(n_cows)
+                trial_stats["trial"].append(trial_num)
+                trial_stats["mean_transitions_e"].append(np.mean(trans_counts_e))
+                trial_stats["mean_transitions_r"].append(np.mean(trans_counts_r))
+                trial_stats["mean_time_e"].append(mean_time_e)
+                trial_stats["mean_time_r"].append(mean_time_r)
+                trial_stats["prop_e"].append(np.mean(prop_e))
+                trial_stats["prop_r"].append(np.mean(prop_r))
+                trial_stats["prop_s"].append(np.mean(prop_s))
+                trial_stats["movement_range"].append(movement_val)
+                trial_stats["vision_range"].append(vision_val)
+
+                delta_E, delta_R, _ = compute_herd_synchrony(herd, verbose=verbose)
+                if np.isfinite(delta_E):
+                    deltas_E.append(delta_E)
+                if np.isfinite(delta_R):
+                    deltas_R.append(delta_R)
+
+            if verbose: print(f"  vv = {vision_val:.4f}: kept {len(deltas_E)} eating, {len(deltas_R)} resting trials")
+
+            mean_E[i, j] = np.mean(deltas_E)
+            std_E[i, j] = np.std(deltas_E)
+            mean_R[i, j] = np.mean(deltas_R)
+            std_R[i, j] = np.std(deltas_R)
+
+    print(f"{topology} topology Δ^R: min={np.min(mean_R):.3f}, max={np.max(mean_R):.3f}")
+
+
+    plot_synchrony_vs_vizmvmt(
+        vision_vals,
+        movement_vals,
+        mean_E, std_E,
+        mean_R, std_R,
+        topology,
+        n_cows,
+        f"synchrony_WALKING_{n_cows}cows_varyvizmvmt.html"
+    )
+
+    # Save stats to CSV
+    df = pd.DataFrame(trial_stats)
+    df.to_csv(f"herd_stats_WALKING_{n_cows}cows_varyvizmvmt.csv", index=False)
+    trial_stats = {key: [] for key in trial_stats}  # reset for next topology
+
+
 if __name__ == "__main__":
     start = time.time()
-    run_herd_synchrony_experiment_vary_vision(verbose=False)
+    # run_herd_synchrony_experiment_vary_vision(verbose=False)
+    run_herd_synchrony_experiment_vary_mvmt_viz(verbose=False)
     end = time.time()
     print(f"Total time: {end - start:.2f} seconds")
